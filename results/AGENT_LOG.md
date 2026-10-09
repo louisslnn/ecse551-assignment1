@@ -7,7 +7,7 @@ Entries are added in order and never rewritten. Dates are in 2026.
 
 | What | Hash |
 |---|---|
-| Phase 0 frozen harness (`src/task3_data.py`, `src/task3_eval.py`) | pending |
+| Phase 0 frozen harness (`src/task3_data.py`, `src/task3_eval.py`) | `cceeb15e720d5b637c2082d1da9a74c5f101496a` |
 | Phase 3 frozen finalists (`results/final_configs.json`) | pending |
 
 ## Environment
@@ -158,3 +158,14 @@ Problem 1 is closed by C1. Updated control row:
 The experiment log was not touched: rows E001 to E004 never recorded a threshold or a pass flag.
 
 After these changes the 12 pipeline tests were run again and all pass.
+
+## Phase 0 freeze (Oct 9)
+
+A group member committed Phase 0 as `cceeb15e720d5b637c2082d1da9a74c5f101496a` ("task3 phase 0: initial commit with frozen harness"). The agent wrote that hash to `results/FROZEN_COMMIT.txt` and filled it into the table at the top of this file (the only earlier line changed).
+
+From this commit on, `src/task3_data.py` and `src/task3_eval.py` are frozen. First frozen-harness check, run right after the hash was recorded:
+
+```
+$ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py
+(empty)
+```
