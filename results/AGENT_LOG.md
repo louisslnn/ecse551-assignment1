@@ -302,3 +302,250 @@ All 19 tests pass: 12 in `tests/test_task3_pipeline.py` and 7 in `tests/test_lea
 $ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py
 (empty)
 ```
+
+## Phase 2: walk-forward experiments on the development period (Oct 9)
+
+Started after the group replied "continue". The Phase 1 commit is `e463be1`.
+
+### What was done
+
+- `src/task3_walkforward.py`: target, stacked panel of member rows, walk-forward loop, prediction smoothing.
+- `src/task3_models.py`: Lasso, random forest and MLP behind one function, `fit_config()`. Every fit first calls the training-window assertion.
+- `src/task3_experiments.py`: `score_and_log()` runs the frozen `evaluate()` and appends one row to the experiment log. It refuses any evaluation ending after 2010-12-31.
+- `src/task3_phase2.py`, `src/task3_phase2b.py`: the stages (baselines, Lasso grid, random forest, MLP, variants and controls, sentiment, post-processing).
+- `src/task3_phase2_report.py`: `results/phase2_results.csv` and six figures in `results/figures/`.
+- `tests/test_walkforward.py`: 7 tests.
+
+51 configurations were evaluated in Phase 2 (log rows E005 to E055). With the 4 Phase 0 rows the log has 55 rows. No run failed. The slowest configuration took 492 seconds.
+
+| Group | Configurations | Log rows |
+|---|---|---|
+| Rule-based baselines | 2 | E005, E006 |
+| Lasso, 6 penalties x 3 windows | 18 | E007 to E024 |
+| Random forest, 3 depths x 2 leaf sizes | 6 | E025 to E030 |
+| MLP, 2 sizes x 2 penalties | 4 | E031 to E034 |
+| Lasso with raw target | 1 | E035 |
+| Negative and positive control | 2 | E036, E037 |
+| Sentiment study (2010 only) | 6 | E038 to E043 |
+| Post-processing of the best Lasso, RF, MLP | 12 | E044 to E055 |
+
+### Decisions
+
+| # | Decision | Reason |
+|---|---|---|
+| D19 | The panel of training rows ends on 2010-12-31, and periods are defined by PREDICTION date. The prediction made on 2010-12-31 is scored by the frozen harness against the return of 2011-01-03, and the test period will start with the prediction made on 2011-01-03 (scored on the return of 2011-01-04). | This is how the frozen `evaluate()` slices dates. No return is used in both periods. The last refit in Phase 2 is on 2010-12-29, so the latest training row is 2010-12-28 and its target is the return of 2010-12-29. |
+| D20 | Features are standardized at each refit with the mean and standard deviation of the training rows only, for all three models. | Smoothed features have a much smaller spread than raw ranks, and a Lasso penalty or an MLP treats small-scale features differently. Using training rows only avoids lookahead. Trees are unaffected; one code path for all models is simpler. |
+| D21 | Lasso penalty grid: `alpha_max * 0.5 * 0.4**k`, k = 0..5, where `alpha_max` = 0.0331 is the smallest penalty that zeroes every coefficient on the first expanding training window (1981-05-22 to 1989-12-29, 1,085,244 rows). Values: 1.66e-2, 6.63e-3, 2.65e-3, 1.06e-3, 4.24e-4, 1.70e-4. Saved in `results/lasso_alpha_grid.json`. | Accepted default 4: chosen from the first training window only. |
+| D22 | Random forest uses `max_features = 1/3`. | The prompt does not set it. The scikit-learn default for regression uses all features at every split, which is bagging, not a random forest. One third is the textbook value for regression. |
+| D23 | One random subsample of 200,000 training rows per refit is shared by the six forests (seed 42). | Same data for every forest at a given refit, so differences come from the hyperparameters. |
+| D24 | MLP: Adam with scikit-learn defaults, batch size 1024, one epoch = one `partial_fit` pass. Epochs are chosen between 1 and 30 by the squared error on the most recent 20% of the training days; a fresh network is then trained on all training days for that many epochs. | Accepted default 6. `early_stopping=True` is not used. The cap was first 10; it was raised to 30 before any development run, see the smoke-test disclosure below. |
+| D25 | Models that share features, target, window and refit schedule are fitted in one pass over time, on the same training rows. `runtime_s` is the fit-and-predict time of that configuration, without the shared data preparation. | Identical results to separate runs, much less time. |
+| D26 | Training window for the chosen Lasso, and for random forest and MLP: 3 years. | Among the 18 Lasso runs, 3 years has the highest development Sharpe (4.06, against 4.00 for 5 years and 3.09 for expanding) and the best last window (1.81, against 1.54 and 1.32). The gap between 3 and 5 years is small compared with the standard error (about 0.22 over 21 years), so this is a weak preference; 3 years is also the cheapest. Expanding is clearly worse, which suggests the relationship drifts over time. |
+| D27 | Best of each family for post-processing: Lasso E012 (3 years, smallest penalty), random forest E029 (depth 8, leaf 200), MLP E033 (32 units, alpha 1e-4). | Highest development Sharpe in its family. E012 and E029 are also best or tied in at least three of the four windows. E033 and E034 are tied (5.16 and 5.14). |
+| D28 | Sentiment study, 6 configurations on 2010 only: Lasso on return features alone and on return plus sentiment features, each at two penalties (grid index 5, the main choice, and index 2, about 16 times larger); Lasso on sentiment alone; random forest on return plus sentiment (depth 4, leaf 1000). All train on an expanding window from 2009-07-13. | The matched return-only runs on the same short history are the fair comparison for "does sentiment add anything". The larger penalty is near the noise level of a six-month sample. The forest is shallow because the first fit has only about 60,000 rows. |
+| D29 | Prediction smoothing uses `ewm(halflife).mean()` on the stored development predictions and is scored with daily demeaning. "Demean off" variants are scored without it. | Post-processing only: no model is refitted. |
+| D30 | Prediction tables are stored in `results/cache/` (885 MB). They are not meant to be committed. | Needed for post-processing and figures without refitting. |
+| D31 | Figure colours: Lasso blue, random forest orange, MLP green, baselines grey, the same in every figure; fonts 14 pt or larger; PDF. The three colours were checked with a colour-blindness validator. | Prompt requirement on fonts and format; consistent identity across figures. |
+
+### Smoke tests outside the development period (not logged as configurations)
+
+Before the first logged run, the engine was tried on prediction dates 1986-01-01 to 1987-12-31, which are before the development period. Eight specs were run there (six Lasso penalties, one forest, one MLP) plus the two reversal rules, and their Sharpe ratios on 1986-1987 were printed. One setting was changed as a result: the MLP epoch cap went from 10 to 30, because the holdout error was still falling at epoch 10. That decision used the holdout error curve, not a Sharpe ratio. The sentiment and control code paths were dry-run on Oct to Dec 2009 and on 1985 without scoring anything. None of this touched 1990-2010 or the test period.
+
+One observation from that smoke test that matters for interpretation: on 1986-1987 the one-day reversal rule had a Sharpe of -3.5 while the five-day reversal rule had +3.3. In this data yesterday's return tends to continue for one more day, and the reversal appears over several days.
+
+### Results: top configurations (development period, demeaned predictions)
+
+Full table: `results/phase2_results.csv`. Per-window values: `results/dev_windows.csv`.
+
+| Row | Configuration | Sharpe 1990-2010 | 1990-94 | 1995-99 | 2000-04 | 2005-10 | Holding period (days) | Mean IC |
+|---|---|---|---|---|---|---|---|---|
+| E029 | RF, depth 8, leaf 200 | 5.50 | 9.52 | 6.25 | 3.95 | 2.55 | 1.14 | 0.033 |
+| E030 | RF, depth 8, leaf 1000 | 5.19 | 9.21 | 5.77 | 3.71 | 2.41 | 1.21 | 0.033 |
+| E033 | MLP, 32 units, alpha 1e-4 | 5.16 | 8.56 | 6.08 | 3.73 | 2.56 | 1.29 | 0.033 |
+| E034 | MLP, 32 units, alpha 1e-2 | 5.14 | 8.61 | 6.05 | 3.66 | 2.57 | 1.30 | 0.033 |
+| E027 | RF, depth 6, leaf 200 | 5.14 | 8.95 | 5.87 | 3.74 | 2.27 | 1.19 | 0.032 |
+| E012 | Lasso, 3 years, alpha 1.70e-4 | 4.06 | 7.48 | 4.77 | 2.60 | 1.81 | 1.39 | 0.030 |
+| E018 | Lasso, 5 years, alpha 1.70e-4 | 4.00 | 7.49 | 4.31 | 2.92 | 1.54 | 1.35 | 0.029 |
+| E024 | Lasso, expanding, alpha 1.70e-4 | 3.09 | 6.75 | 2.31 | 2.26 | 1.32 | 1.05 | 0.016 |
+| E005 | Baseline: 5-day reversal | 2.18 | 4.09 | 2.59 | 1.39 | 1.25 | 1.56 | 0.023 |
+| E006 | Baseline: 12-1 momentum | 0.52 | 0.85 | 1.22 | -0.01 | 0.23 | 10.91 | 0.012 |
+
+All configurations have at least 487 predictions per day.
+
+### Results: variants of the best models
+
+| Variant | Lasso E012 | RF E029 | MLP E033 |
+|---|---|---|---|
+| As selected (demeaned, no smoothing): Sharpe / holding period | 4.06 / 1.39 | 5.50 / 1.14 | 5.16 / 1.29 |
+| Scored without daily demeaning | 4.06 | 5.12 | 3.73 |
+| Predictions smoothed, half-life 2 | 2.86 / 3.55 | 3.79 / 2.95 | 3.55 / 3.30 |
+| Predictions smoothed, half-life 5 | 2.08 / 6.27 | 2.53 / 5.23 | 2.45 / 5.73 |
+| Predictions smoothed, half-life 10 | 1.61 / 9.92 | 1.76 / 8.29 | 1.75 / 8.87 |
+
+Training the Lasso on the raw target instead of the demeaned one (E035) gives the same Sharpe, 4.06.
+
+### Results: controls
+
+| Row | Control | Sharpe 1990-2010 | Mean IC | Expected | Verdict |
+|---|---|---|---|---|---|
+| E037 | Positive: features shifted one day into the future | 68.28 | 0.995 | dramatic jump | pass: 17 times the real Lasso (4.06) |
+| E036 | Negative: training targets shuffled within each day | -0.02 | 0.003 | near 0 | pass |
+
+Note on the negative control: its Sharpe by window is 1.22, -0.05, 0.06, -0.67. These are not close to 0 individually. The reason is that the shuffled-target Lasso still outputs a random mix of real features, and features like reversal have a strong true effect, so whichever random sign the fit lands on is carried for many consecutive refits (each 3-year window overlaps the next by 92%). Over the whole period the signs cancel.
+
+### Results: sentiment study (2010 only, one year)
+
+| Row | Model | Features | Sharpe 2010 | Mean IC |
+|---|---|---|---|---|
+| E038 | Lasso, alpha index 5 | return | 0.43 | 0.003 |
+| E039 | Lasso, alpha index 5 | return + sentiment | 0.32 | 0.003 |
+| E040 | Lasso, alpha index 2 | return | 0.37 | 0.003 |
+| E041 | Lasso, alpha index 2 | return + sentiment | 0.37 | 0.003 |
+| E042 | Lasso, alpha index 5 | sentiment only | -0.90 | -0.002 |
+| E043 | RF, depth 4, leaf 1000 | return + sentiment | 1.32 | 0.004 |
+
+The standard error of a one-year Sharpe is about 1.0, so none of these differ from each other or from zero. Adding sentiment to the Lasso does not help at either penalty, and sentiment alone is negative. For context, the long-history models using return features only have these 2010 Sharpe ratios (slices of already logged P&L, not new configurations): Lasso E012 1.66, RF E029 3.67, MLP E033 2.43, 5-day reversal 1.21. The sentiment models, trained on 6 to 18 months, are all below them. Sentiment does not look viable as a finalist.
+
+### What the models use
+
+Lasso E012 over its 85 refits (standardized features): `rev_1_hl5` is nonzero in every refit with a negative coefficient (mean -0.066, by far the largest): a stock that rose over the last week or so is predicted to fall. `rev_1` is nonzero in 95% of refits with a mostly positive coefficient (mean +0.013): yesterday's move partly continues. `vol_level` is nonzero in 99% of refits, mostly negative. On average 12.7 of the 18 coefficients are nonzero (minimum 9, maximum 16). Random forest E029: the largest mean importances are `rev_1` (0.11), `rev_1_hl5` (0.10), `vol_level` (0.09) and `rev_1_hl10` (0.08).
+
+### Problems and cautions
+
+**Problem 6: the best configuration of every family sits on the edge of its grid.** Lasso: the smallest penalty is best in all three windows, and the Sharpe is still rising as the penalty falls (3.96 to 4.06 on the last step), so the Lasso is close to ordinary least squares. Random forest: the deepest trees with the smallest leaves are best. MLP: the larger network is best, and 67% of the refits chose the maximum of 30 epochs, so the networks are probably under-trained. The grids were fixed in advance by the prompt or by the accepted defaults and were not extended. Status: reported; extending a grid is a group decision.
+
+**Caution 1: the development Sharpe ratios are far above the assignment's benchmark of about 2 for one-day holding periods.** The positive and negative controls, the truncation tests and the training-window assertion give no sign of leakage, and the 5-day reversal rule alone, with nothing fitted, already reaches 2.18. The harness has no transaction costs, and a holding period of 1.1 to 1.4 days means the whole book is replaced almost daily.
+
+**Caution 2: performance decays steadily.** Every model and the reversal baseline lose roughly three quarters of their Sharpe between 1990-1994 and 2005-2010 (RF 9.5 to 2.6, Lasso 7.5 to 1.8, reversal 4.1 to 1.3). The development total is dominated by the 1990s. The last window is the most relevant guide for the test period.
+
+**Caution 3: selection and multiple testing.** 51 configurations were scored on the same 21 years. The standard error of a 21-year Sharpe is about 0.22, so the ranking inside a family (for example RF 5.50 against 5.19, MLP 5.16 against 5.14) is not reliable. The ordering RF and MLP above Lasso above reversal holds in every window.
+
+**Caution 4: the strategies are not market neutral in the beta sense.** With daily demeaning the P&L still has a correlation of 0.21 to 0.29 with the equal-weight market return.
+
+**Caution 5: smoothing costs a lot.** Because the signal lives at the one-day horizon, a half-life of 5 days halves the Sharpe for a holding period of about 5 to 6 days.
+
+### Proposed finalists
+
+| # | Row | Configuration | Why |
+|---|---|---|---|
+| 1 | E012 | Lasso, 18 return features, 3-year window, alpha 1.70e-4, refit every 63 days | Best Lasso overall and in the most recent window; the simplest model and the one whose coefficients can be read. |
+| 2 | E029 | Random forest, depth 8, leaf 200, 3-year window, refit every 252 days | Best configuration overall and best in every window among the forests. |
+| 3 | E033 | MLP, 32 units, alpha 1e-4, 3-year window, refit every 252 days | Best MLP; tied with E034, chosen for the higher total. |
+| 4 (optional) | E054 | MLP E033 with predictions smoothed, half-life 5 | A slow variant (holding period 5.7 days, Sharpe 2.45) to compare against the assignment's long-holding-period benchmark of 0.6. Chosen over the forest with the same smoothing (E050, Sharpe 2.53) because it is steadier in the last window (1.46 against 0.79). |
+
+No sentiment finalist is proposed.
+
+### Figures (`results/figures/`, PDF, 14 pt fonts)
+
+`phase2_lasso_grid.pdf`, `phase2_sharpe_by_window.pdf`, `phase2_sharpe_vs_holding.pdf`, `phase2_smoothing_tradeoff.pdf`, `phase2_controls.pdf`, `phase2_cumulative_pnl.pdf`.
+
+### Tests
+
+All 26 tests pass: 12 in `tests/test_task3_pipeline.py`, 7 in `tests/test_leakage.py`, 7 in `tests/test_walkforward.py`. The new file checks, on small synthetic data, that every refit trains on days strictly before the refit date, that predictions up to a date do not change when later data is removed, that the shuffle of the negative control keeps each day's values, and that smoothing only looks backwards. It also reads the refit records of the real Phase 2 runs (2,026 refits) and asserts that the last training day is before the refit date in every one.
+
+### Frozen-harness diff at the Phase 2 checkpoint
+
+```
+$ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py
+(empty)
+```
+
+## Phase 2 follow-up: grid extension, delay diagnostic, freeze (Oct 9, after the checkpoint)
+
+### Instructions received
+
+Finalists E012, E029, E033 and E054 approved in principle. Before writing `final_configs.json`, on the development period only and with every run logged:
+
+1. Grid extension, at most 5 configurations: Lasso with alpha = 0 on the 3-year window; random forest depth 10 and 12 with leaf 200; MLP 32 units with epoch cap 60; MLP 64 units. Rule fixed by the group before the runs: replace a finalist only if the extension beats it by more than 0.22 in development Sharpe; otherwise keep it and report a plateau.
+2. Delayed-execution diagnostic: evaluate `P.shift(1)` on 1990-2010 for the finalists and the reversal baseline, from the cached predictions. Diagnostic only, not a selection criterion.
+3. Add `results/cache/` to `.gitignore`.
+4. Write the expected range of test Sharpe for each finalist, based on 2005-2010 performance.
+5. Write `final_configs.json`, stop, and run nothing on the test period until the group sends the commit hash.
+
+### Changes to the code
+
+| # | Change | Reason |
+|---|---|---|
+| C9 | `task3_models.py`: new spec `{"model": "ols"}` (scikit-learn `LinearRegression`), and the MLP epoch cap can be set per spec with `max_epochs` (default still 30). | Needed for the extension. `Lasso(alpha=0)` is not used because scikit-learn advises against it; least squares is the same model. |
+| C10 | `task3_phase2b.py`: stages `extension` and `delay`; the dict `FINALISTS`. `task3_phase2_report.py`: the window and cumulative P&L figures now show the final finalists. | Requested runs. |
+| C11 | `.gitignore`: added `results/cache/`. | Requested. |
+| C12 | New `src/task3_finalists.py`, which writes `results/final_configs.json`. | So the frozen file is generated by code and can be checked against the log. |
+
+### Grid extension results (rows E056 to E060)
+
+| Row | Extension | Sharpe 1990-2010 | 1990-94 | 1995-99 | 2000-04 | 2005-10 | Compared with | Difference | Rule (> 0.22) |
+|---|---|---|---|---|---|---|---|---|---|
+| E056 | Lasso alpha = 0 (least squares), 3 years | 4.199 | 7.65 | 4.93 | 2.69 | 2.01 | E012: 4.064 | +0.135 | keep E012 |
+| E057 | RF depth 10, leaf 200 | 5.682 | 9.96 | 6.41 | 4.13 | 2.56 | E029: 5.500 | +0.182 | keep |
+| E058 | RF depth 12, leaf 200 | 5.784 | 10.19 | 6.49 | 4.14 | 2.70 | E029: 5.500 | +0.284 | replace |
+| E059 | MLP 32 units, epoch cap 60 | 5.394 | 9.20 | 6.33 | 3.86 | 2.69 | E033: 5.159 | +0.235 | replace |
+| E060 | MLP 64 units, epoch cap 30 | 5.387 | 8.94 | 6.78 | 3.71 | 2.61 | E033: 5.159 | +0.228 | replace |
+
+Slowest extension run: 484 seconds.
+
+Applying the rule:
+
+- **Lasso: E012 stays.** Removing the penalty completely adds 0.135, less than 0.22. Performance plateaus as the penalty goes to zero.
+- **Random forest: E029 is replaced by E058 (depth 12).** The gain flattens (depth 8 to 10: +0.18, depth 10 to 12: +0.10), which is expected because a leaf of 200 rows already limits how deep the trees can usefully grow.
+- **MLP: E033 is replaced by E059 (32 units, cap 60).** Two extensions pass the rule and are tied (5.394 and 5.387). E059 is taken because it has the higher total and is better in three of the four windows. It is the same network as E033 trained longer. With the cap at 60, 41% of the refits still stop at the cap (67% at cap 30); the mean chosen number of epochs is 53.
+- **Slow variant: E054 stays as approved** (the predictions of E033 smoothed with a half-life of 5 days). No extension run was a smoothed model, so nothing beat it under the rule. Consequence: the slow finalist is built on the 30-epoch network E033, not on the new MLP finalist E059, so Phase 3 must also carry E033 forward as the base of the slow variant. Deriving the slow variant from E059 instead would need one more development run that the group did not ask for. Status: reported as an open choice for the group before the freeze is committed.
+
+Both replacements beat the threshold by a small margin (0.284 and 0.235 against 0.22, where 0.22 is one standard error of a 21-year Sharpe), and all five extensions improve on their starting point. The honest reading is a slow, continuing improvement with more capacity, not a newly found optimum.
+
+### Delayed-execution diagnostic (rows E061 to E065, not eligible for selection)
+
+Every prediction is used one day late: the prediction made at the close of day t-1 is held over day t+1.
+
+| Finalist | On time: Sharpe 1990-2010 | One day late | 1990-94 | 1995-99 | 2000-04 | 2005-10 | Share kept |
+|---|---|---|---|---|---|---|---|
+| Lasso E012 | 4.06 | 2.70 | 3.53 | 3.88 | 2.13 | 1.16 | 67% |
+| RF E058 | 5.78 | 3.81 | 5.07 | 4.67 | 3.46 | 1.96 | 66% |
+| MLP E059 | 5.39 | 3.55 | 5.23 | 4.57 | 2.45 | 2.19 | 66% |
+| MLP slow E054 | 2.45 | 1.70 | 2.21 | 2.48 | 1.15 | 1.20 | 70% |
+| 5-day reversal E005 | 2.18 | 2.29 | 5.27 | 1.97 | 1.41 | 1.34 | 105% |
+
+The fitted models lose about a third of their Sharpe when execution is one day late, most of it in 1990-1994. The reversal rule loses nothing, which fits the earlier observation that yesterday's return tends to continue for a day: waiting a day removes the part of the rule that fights that continuation. A sizeable part of what the fitted models add over the rule therefore depends on trading at the very close on which the prediction is made.
+
+### Totals before the freeze
+
+65 rows in the experiment log: 4 Phase 0 harness checks and 61 Phase 2 rows (51 at the checkpoint, 5 grid extensions, 5 delay diagnostics). This is one more than the "about 60" budget of the prompt, because of the diagnostics the group asked for. No run failed.
+
+### Expected test-period Sharpe, written before any test-period run
+
+Basis, as asked: the 2005-2010 Sharpe of each finalist. Two reference points are used.
+
+- **No further decay:** the test Sharpe equals the 2005-2010 Sharpe.
+- **Decay continues:** between consecutive development windows the Sharpe of the finalists and of the reversal rule was multiplied by 0.64 on median (15 ratios, from 0.49 to 0.92). One more step of 0.65 is applied.
+
+The standard error of a 3-year Sharpe is about 0.58, so the range is widened by one standard error on each side.
+
+| Finalist | Sharpe 2005-2010 | Central expectation (decay continues .. no decay) | Expected range (central +/- 1 standard error) |
+|---|---|---|---|
+| Lasso E012 | 1.81 | 1.2 to 1.8 | 0.6 to 2.4 |
+| RF E058 | 2.70 | 1.75 to 2.7 | 1.2 to 3.3 |
+| MLP E059 | 2.69 | 1.75 to 2.7 | 1.2 to 3.3 |
+| MLP slow E054 | 1.46 | 0.95 to 1.45 | 0.4 to 2.0 |
+| Baseline 5-day reversal | 1.25 | 0.8 to 1.25 | 0.2 to 1.8 |
+| Baseline 12-1 momentum | 0.23 | about 0.2 | -0.4 to 0.8 |
+
+What would change the interpretation:
+
+- A result below the range would mean the decay accelerated or the 2011-2013 regime differs. It would not by itself indicate a bug.
+- A result above the range (for example a forest above 3.3) would be surprising given 20 years of decay and should be checked before it is believed.
+- The year-by-year values inside 2005-2010 are very uneven (Lasso from 0.35 in 2008 to 4.29 in 2006; forest from 1.10 to 5.17), so a single 3-year number can land anywhere in these ranges without contradicting the development results.
+- Ranking between the forest and the MLP on the test period carries no information: they are tied on 2005-2010 (2.70 and 2.69).
+
+**Disclosure: this expectation is not fully blind for the reversal baseline.** The group's notebook, which the agent read in Phase 0 as the source of truth, contains the 5-day reversal Sharpe by year for 2011 (1.55), 2012 (-0.32) and 2013 (0.85), and 0.83 for the window 2010-2013. The agent has therefore seen that the reversal rule kept decaying in the test period. The ranges above were computed from 2005-2010 numbers by the stated formula, but the choice to treat "decay continues" as a serious scenario cannot be shown to be independent of that knowledge. No test-period result of any fitted model has been computed or seen.
+
+### `results/final_configs.json`
+
+Written by `src/task3_finalists.py`. Contents: the two periods, the walk-forward rules (panel start, refit dates counted from the first trading day of 1990 and continued unchanged through 2013, 3-year window, standardization, target, seed, subsample and smoothing rules), the 18 feature names, the four finalists with their exact hyperparameters, and the two baseline rules. Checked: the feature list equals the column order of the development panel, and each finalist's settings equal the log row it comes from.
+
+| Finalist | From row | Model | Window | Refit | Smoothing |
+|---|---|---|---|---|---|
+| `lasso` | E012 | Lasso, alpha 1.697e-4 | 3 years | 63 days | none |
+| `rf` | E058 | Random forest, depth 12, leaf 200, 100 trees, 200,000 rows per fit | 3 years | 252 days | none |
+| `mlp` | E059 | MLP, 32 units, alpha 1e-4, epochs chosen in 1..60 | 3 years | 252 days | none |
+| `mlp_slow` | E054 | MLP, 32 units, alpha 1e-4, epochs chosen in 1..30 (network of E033) | 3 years | 252 days | half-life 5 |
+
+Nothing has been run on the test period. Phase 3 starts only after the group sends the hash of the commit that contains this file.
