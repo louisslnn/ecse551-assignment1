@@ -1,0 +1,15 @@
+check,expected,actual,pass
+perfect foresight P = Y: Sharpe,> 10,16.59804803018954,True
+"random N(0,1) seed 42: |Sharpe|",< 1.5,0.31447503856362097,True
+always long P = 1: corr with market,> 0.9,0.9999982976424721,True
+5-day reversal 1985-2010 (demeaned): Sharpe,report only,2.326809908805963,
+5-day reversal Sharpe 1985-1989,report only,3.2459120522755978,
+5-day reversal Sharpe 1990-1994,report only,4.08693769435408,
+5-day reversal Sharpe 1995-1999,report only,2.5911992740362346,
+5-day reversal Sharpe 2000-2004,report only,1.3949107466132513,
+5-day reversal Sharpe 2005-2010,report only,1.2531352259139603,
+5-day reversal 1985-2010: mean IC,report only,0.025506300239802555,
+5-day reversal 1985-2010: IC t-stat,report only,18.49305084999953,
+5-day reversal 1985-2010: holding period (days),report only,1.5716563583932102,
+5-day reversal 1985-2010: corr w/ market,report only,0.15902721566040248,
+5-day reversal 1985-2010: min preds/day,report only,493.0,

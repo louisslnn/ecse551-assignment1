@@ -1,0 +1,126 @@
+% ==================================================================
+% ECSE 551 A1 -- Task 3 report blocks (IEEE conference template)
+%
+% Each block is labelled with the report section it belongs to, so
+% the required structure (Abstract, Intro, Methodology, Datasets,
+% Results, Discussion, Contributions) is preserved.
+%
+% Placeholders use \tbd{...}. Put these two lines in the PREAMBLE:
+%   \usepackage{xcolor}
+%   \newcommand{\tbd}[1]{\textcolor{red}{[TBD: #1]}}
+%
+% Figure files expected in figures/ (save Python plots as PDF):
+%   fig_t3_voladj.pdf, fig_t3_test_pnl.pdf, fig_t3_window_sharpe.pdf
+% ==================================================================
+
+
+% ------------------------------------------------------------------
+% BLOCK A  ->  goes in the DATASETS section
+% ------------------------------------------------------------------
+\subsection{Equity Returns and Sentiment Data (Task 3)}
+\label{sec:t3_data}
+
+The equity data consist of daily excess returns for 1,335 securities over 8,577 trading days (January 2, 1980 to December 31, 2013), a binary S\&P~500 membership indicator of the same shape, and sector metadata (GICS codes). The sentiment data provide daily bullish and bearish scores for 606 stocks on calendar days from July 2009 onward.
+
+Inspecting the data revealed three issues not mentioned in the assignment description. First, 21 permanent identifiers (permnos) appear twice as column headers. The two series sharing an identifier are never identical: their correlation on overlapping days ranges from 0.06 to 0.47, comparable to two unrelated stocks, and in several cases both are index members on the same day. We therefore treat each column as a distinct security. Second, 21 columns contain no data and were removed, leaving 1,314 securities. Third, returns are not restricted to index members: on a typical day about 255 non-members also have returns, while every member has one. Because the dataset only contains stocks that were members at some point between 1980 and 2013, the presence of a non-member's history is itself informative about its future inclusion. We therefore use non-member days only for volatility estimation and feature construction, never as training targets or for evaluation. About 9.2\% of returns are exactly zero, consistent with pre-2001 fractional tick sizes and illiquid days; these are retained.
+
+Returns were volatility-adjusted with the EWMA filters of the assignment, using $\beta_1 = 0.97$ (variance half-life of about 23 days), $\beta_2 = 0.99$ (mean half-life of about 69 days), an initial variance of $0.02^2$, and a burn-in of 100 observations per stock. Each return is divided by the previous day's estimate, $\tilde r_t = r_t / \hat\sigma_{t-1}$, because $\hat\sigma_t$ depends on $r_t$ itself and would not be known when positions are set. On member days the adjusted returns have a standard deviation of 1.06 and an excess kurtosis of 22.7, and 0.20\% of them exceed 5 in absolute value. We clip adjusted returns to $[-5, 5]$ when they are used as features or training targets, but evaluate on unclipped returns, since these are what a strategy would actually earn. Fig.~\ref{fig:t3_voladj} shows that the adjustment removes most of the time variation in dispersion: the cross-sectional standard deviation of raw returns varies by a factor of about four, whereas the adjusted series stays between 0.6 and 1.1. The remaining dips coincide with crises (1987, 2002, 2008, 2011), when rising correlations inflate total volatility estimates relative to cross-sectional dispersion.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_t3_voladj.pdf}
+\caption{Cross-sectional standard deviation of member returns (63-day average) before (top) and after (bottom) volatility adjustment.}
+\label{fig:t3_voladj}
+\end{figure}
+
+
+% ------------------------------------------------------------------
+% BLOCK B  ->  goes in the METHODOLOGY section
+% ------------------------------------------------------------------
+\subsection{Task 3: Evaluation Protocol and Agent-Assisted Experimentation}
+\label{sec:t3_method}
+
+\textit{Prediction and evaluation.} A prediction $\hat r_{t,i}$ is formed at the close of day $t$ for each member stock $i$, using only information available at that time, and is scored against the realized adjusted return $\tilde r_{t+1,i}$. The daily profit-and-loss is $R_t = \sum_i \hat r_{t,i}\,\tilde r_{t+1,i}$, from which we compute the annualized Sharpe ratio $\mathrm{SR} = \sqrt{252}\,\overline{R}/\mathrm{sd}(R)$ over the full period and over sub-windows. We also report the mean daily Spearman correlation between predictions and realized returns (the information coefficient, IC) and its cumulative sum, the average holding period $H_{av}$ defined in the assignment, and the correlation of $R_t$ with an equal-weight long-only portfolio of members. Unless stated otherwise, predictions are demeaned across stocks each day, making the strategy approximately market neutral. Before any model was trained, the evaluation code was validated with three controls: perfect-foresight predictions produced a Sharpe ratio of 16.6 on 2011--2013, far beyond any realistic strategy (confirming that predictions and returns are correctly aligned), random predictions produced a Sharpe ratio of 0.31, well within the noise expected over three years, and an always-long portfolio produced a market correlation of 1.00.
+
+\textit{Why an agent.} Unlike Tasks 1 and 2, Task 3 has a loosely specified model class but a large design space: feature definitions and smoothing, training-window length, refit frequency, market neutrality, and model family. Each configuration requires a full walk-forward simulation over two decades of data. This makes the task well suited to systematic, delegated experimentation. It also makes it highly exposed to the two failure modes the assignment emphasizes: lookahead bias and overfitting through repeated testing. We therefore split responsibilities. Data inspection, cleaning decisions, volatility adjustment, and the evaluation code were developed and validated by the group before the agent was launched (with interactive LLM assistance, Section~\ref{sec:llm}). The agent, Claude Code~\cite{claudecode}, then implemented the features and ran the experiments under a written protocol. The full prompt is reproduced in the submitted notebook.
+
+\textit{Guardrails.} The protocol imposes six constraints. The data-loading and evaluation modules were frozen after the agent reproduced our verified statistics. The agent had no permission to stage or commit, so the frozen commit was created by a group member, and an empty \texttt{git diff} against it was checked at every checkpoint; the agent therefore could not alter how it was scored. The test period (2011--2013) was locked: all selection used a development period, the chosen configurations were committed by a group member before any test evaluation, and each finalist was evaluated on the test period exactly once. Lookahead was controlled in three ways: an assertion that models predicting on day $t$ are trained only on rows up to $t-1$ (whose targets are known at time $t$), a truncation test showing that features recomputed from data ending at $t$ match the full-data features, and two controls (features deliberately shifted one day into the future, which must inflate performance, and within-day permuted targets, which must remove it). Every configuration tried was appended to an experiment log, so the number of configurations tested (\tbd{N}) can be reported alongside any result. The agent was restricted to the model families named in the assignment, and was required to write plain, commented code and to stop for human review at the end of each of its five phases.
+
+\textit{Clarifications before launch.} Before writing any code, the agent read the prompt, inspected the repository without modifying it, and returned a plan of about 51 configurations together with four questions, which we answered. First, the prompt required the perfect-foresight control to exceed a Sharpe ratio of 50, but our own evaluation code gives 16.6 on the test period. Since the threshold only needs to separate a leaking predictor from a realistic one, we lowered it to 10 rather than altering the evaluation code. Second, the agent proposed reusing a Python environment belonging to another project; we instead had it work in our own environment, installing the required packages and recording their versions. Third, we approved renaming the notebook folder to match the repository layout assumed in the prompt. Fourth, we kept version control entirely in human hands: the agent never stages or commits, and the frozen-harness and frozen-finalist commits described above were made by a group member at the corresponding checkpoints. We also accepted the agent's proposed defaults: all coverage and fill statistics in the development phases are restricted to data up to 2010, the Lasso penalty grid is chosen from the first training window only, the expanding training window starts once all return features exist (mid-1981), and the number of MLP epochs is selected on the most recent 20\% of each training window before refitting on the whole window. At the first checkpoint, the agent's extracted code reproduced every statistic from our exploration exactly. It also found one error in our exploratory code: the fraction of extreme adjusted returns had been divided by all date-by-stock cells, including empty ones, rather than by the observed values, understating it by a factor of about 2.6. The corrected value is used in Section~\ref{sec:t3_data}.
+
+\textit{Walk-forward design.} Features are computed from adjusted returns (1-, 5- and 21-day reversal, 12-1 month momentum, volatility level, and sector-relative and temporally smoothed versions) and, from 2009 onward, from sentiment, which is lagged by one trading day to avoid using posts made after the close. All features are ranked across stocks each day. Models are refit on a rolling schedule (every 63 trading days for Lasso, every 252 for random forest and MLP) using a trailing training window, and are selected on walk-forward predictions for 1990--2010, favouring consistency across sub-windows over the highest aggregate Sharpe ratio. Because sentiment begins in July 2009, sentiment-based models could only be developed on 2010, which severely limits what can be concluded about them. \tbd{adjust refit schedule, windows and feature list to what the agent actually ran}
+
+
+% ------------------------------------------------------------------
+% BLOCK C  ->  goes in the RESULTS section
+% ------------------------------------------------------------------
+\subsection{Task 3: Return Prediction}
+\label{sec:t3_results}
+
+\textit{Development period.} Table~\ref{tab:t3_dev} summarizes the development-period results for the baselines and the best configuration of each model family. \tbd{2--3 sentences: which family did best, whether performance was consistent across 1990--1999 and 2000--2010, typical holding periods}. Across the \tbd{N} configurations tried, \tbd{one sentence on the spread of results, e.g. how many had positive development Sharpe}. The leakage controls behaved as expected: shifting features one day into the future raised the development Sharpe ratio from \tbd{x} to \tbd{y}, while permuting the training targets reduced it to \tbd{z}.
+
+\begin{table}[t]
+\caption{Task 3 development-period results (walk-forward, 1990--2010). SR: annualized Sharpe ratio; IC: mean daily Spearman correlation; $H_{av}$: average holding period in days; $\rho_{\mathrm{mkt}}$: correlation with an equal-weight long-only portfolio.}
+\label{tab:t3_dev}
+\centering
+\begin{tabular}{lccccc}
+\hline
+Model & SR & SR 90s & SR 00s & IC & $H_{av}$ \\
+\hline
+5-day reversal & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+12-1 momentum  & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+Lasso          & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+Random forest  & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+MLP            & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+\hline
+\end{tabular}
+\end{table}
+
+\textit{Test period.} Table~\ref{tab:t3_test} and Fig.~\ref{fig:t3_test} report the single evaluation of the finalists on 2011--2013. With three years of test data, the standard error of the Sharpe estimate is roughly $1/\sqrt{3} \approx 0.58$, so only test Sharpe ratios above about 1.0 to 1.2 provide meaningful evidence of predictive power. \tbd{interpretation: which finalists clear that bar, if any; whether the P\&L rises steadily or is driven by a few episodes; agreement between Sharpe and cumulative IC}. \tbd{holding period vs Sharpe trade-off from prediction smoothing, related to the assignment's benchmarks}. \tbd{sentiment result, with the caveat about the short development window}.
+
+\begin{table}[t]
+\caption{Task 3 test-period results (2011--2013), each finalist evaluated once after its configuration was frozen.}
+\label{tab:t3_test}
+\centering
+\begin{tabular}{lccccc}
+\hline
+Model & SR & IC & $H_{av}$ & $\rho_{\mathrm{mkt}}$ & min $N$/day \\
+\hline
+5-day reversal & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+\tbd{finalist 1} & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+\tbd{finalist 2} & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+\tbd{finalist 3} & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_t3_test_pnl.pdf}
+\caption{Cumulative P\&L (left) and cumulative rank IC (right) of the finalists and the reversal baseline on the 2011--2013 test period.}
+\label{fig:t3_test}
+\end{figure}
+
+\textit{Stability over time.} Fig.~\ref{fig:t3_windows} shows the Sharpe ratio by five-year window over the full walk-forward period. \tbd{e.g. whether reversal-type signals weaken after 2000, as the assignment anticipates}. The 1990--2010 windows were used for model selection and are therefore not truly out-of-sample.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_t3_window_sharpe.pdf}
+\caption{Annualized Sharpe ratio by window for the baselines and finalists. Windows before 2011 belong to the development period.}
+\label{fig:t3_windows}
+\end{figure}
+
+
+% ------------------------------------------------------------------
+% BLOCK D  ->  LLM usage statement (own section or within Contributions)
+% ------------------------------------------------------------------
+\section*{Statement on LLM Usage}
+\label{sec:llm}
+
+For Task 3, we used Claude (Anthropic, model Claude Opus 5.5, chat interface) interactively to plan the division of work, to guide the step-by-step inspection and cleaning of the data, and to suggest code for volatility adjustment and evaluation, which we ran, checked against sanity controls, and modified ourselves. The same assistant drafted the agent prompt and an initial version of the Task 3 text in this report, both of which we reviewed and edited. Experiments were then run agentically with Claude Code (\tbd{model}) inside our repository: its context consisted of the repository, our exploration notebook, and the written prompt (reproduced in the submitted notebook), and its decisions, including the clarifying questions it asked before starting and our answers, are recorded in the agent log included in the notebook. We reviewed the agent's output at each of its five checkpoints, made all commits ourselves, and approved the finalists before the test evaluation. \tbd{LLM usage for Tasks 1 and 2, written by the members responsible}.
+
+
+% ------------------------------------------------------------------
+% Bibliography entry (add to your thebibliography environment)
+% ------------------------------------------------------------------
+% \bibitem{claudecode} Anthropic, ``Claude Code,'' 2026. [Online]. Available: https://docs.claude.com
