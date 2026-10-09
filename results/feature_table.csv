@@ -1,0 +1,32 @@
+name,formula,lookback_days,first_available,mean_coverage,fill_fraction,dev_window,coverage_dev_window,corr_with_base
+rev_1,rank among members of: vadj_c[t],1,1980-05-23,0.9978,0.0022,1990-01-01..2010-12-31,0.9977,1.0
+rev_1_hl5,EWMA over time (half-life 5 days) of ranked rev_1,1 + EWMA (half-life 5),1980-05-23,0.9978,0.0022,1990-01-01..2010-12-31,0.9977,0.493
+rev_1_hl10,EWMA over time (half-life 10 days) of ranked rev_1,1 + EWMA (half-life 10),1980-05-23,0.9978,0.0022,1990-01-01..2010-12-31,0.9977,0.363
+rev_5,rank among members of: mean of vadj_c over t-4..t (at least 3 values),5,1980-05-28,0.9978,0.0022,1990-01-01..2010-12-31,0.9976,1.0
+rev_5_hl5,EWMA over time (half-life 5 days) of ranked rev_5,5 + EWMA (half-life 5),1980-05-28,0.9978,0.0022,1990-01-01..2010-12-31,0.9976,0.596
+rev_5_hl10,EWMA over time (half-life 10 days) of ranked rev_5,5 + EWMA (half-life 10),1980-05-28,0.9978,0.0022,1990-01-01..2010-12-31,0.9976,0.448
+rev_21,rank among members of: mean of vadj_c over t-20..t (at least 15 values),21,1980-06-13,0.9975,0.0025,1990-01-01..2010-12-31,0.9973,1.0
+rev_21_hl5,EWMA over time (half-life 5 days) of ranked rev_21,21 + EWMA (half-life 5),1980-06-13,0.9975,0.0025,1990-01-01..2010-12-31,0.9973,0.835
+rev_21_hl10,EWMA over time (half-life 10 days) of ranked rev_21,21 + EWMA (half-life 10),1980-06-13,0.9975,0.0025,1990-01-01..2010-12-31,0.9973,0.697
+mom_12_1,rank among members of: sum of vadj_c over t-251..t-21 (all 231 values required),252,1981-05-22,0.9869,0.0131,1990-01-01..2010-12-31,0.9899,1.0
+vol_level,"rank among members of: log(sig[t]), sig = EWMA volatility, half-life 23 days",all past (100-day burn-in),1980-05-22,0.9979,0.0021,1990-01-01..2010-12-31,0.9977,1.0
+rev_5_sec,rank among members of: rev_5 minus same-day mean of rev_5 among members of the same GICS sector,5,1980-05-28,0.9978,0.0022,1990-01-01..2010-12-31,0.9976,1.0
+rev_5_sec_hl5,EWMA over time (half-life 5 days) of ranked rev_5_sec,5 + EWMA (half-life 5),1980-05-28,0.9978,0.0022,1990-01-01..2010-12-31,0.9976,0.596
+rev_5_sec_hl10,EWMA over time (half-life 10 days) of ranked rev_5_sec,5 + EWMA (half-life 10),1980-05-28,0.9978,0.0022,1990-01-01..2010-12-31,0.9976,0.448
+rev_21_sec,rank among members of: rev_21 minus same-day sector mean among members,21,1980-06-13,0.9975,0.0025,1990-01-01..2010-12-31,0.9973,1.0
+rev_21_sec_hl5,EWMA over time (half-life 5 days) of ranked rev_21_sec,21 + EWMA (half-life 5),1980-06-13,0.9975,0.0025,1990-01-01..2010-12-31,0.9973,0.834
+rev_21_sec_hl10,EWMA over time (half-life 10 days) of ranked rev_21_sec,21 + EWMA (half-life 10),1980-06-13,0.9975,0.0025,1990-01-01..2010-12-31,0.9973,0.697
+mom_12_1_sec,rank among members of: mom_12_1 minus same-day sector mean among members,252,1981-05-22,0.9869,0.0131,1990-01-01..2010-12-31,0.9899,1.0
+sent_bull,rank among members of: mean bullish score of calendar days after the previous trading day and before t,1 to 4 calendar days,2009-07-13,0.0988,0.9012,2010-01-01..2010-12-31,0.12,1.0
+sent_bull_hl5,EWMA over time (half-life 5 days) of ranked sent_bull,1 to 4 calendar days + EWMA (half-life 5),2009-07-13,0.4365,0.5635,2010-01-01..2010-12-31,0.5146,0.489
+sent_bull_hl21,EWMA over time (half-life 21 days) of ranked sent_bull,1 to 4 calendar days + EWMA (half-life 21),2009-07-13,0.4365,0.5635,2010-01-01..2010-12-31,0.5146,0.237
+sent_bear,"rank among members of: mean bearish score, same days as sent_bull",1 to 4 calendar days,2009-07-13,0.0988,0.9012,2010-01-01..2010-12-31,0.12,1.0
+sent_bear_hl5,EWMA over time (half-life 5 days) of ranked sent_bear,1 to 4 calendar days + EWMA (half-life 5),2009-07-13,0.4377,0.5623,2010-01-01..2010-12-31,0.515,0.531
+sent_bear_hl21,EWMA over time (half-life 21 days) of ranked sent_bear,1 to 4 calendar days + EWMA (half-life 21),2009-07-13,0.4377,0.5623,2010-01-01..2010-12-31,0.515,0.35
+sent_net,"rank among members of: bullish minus bearish, same days",1 to 4 calendar days,2009-07-13,0.0988,0.9012,2010-01-01..2010-12-31,0.12,1.0
+sent_net_hl5,EWMA over time (half-life 5 days) of ranked sent_net,1 to 4 calendar days + EWMA (half-life 5),2009-07-13,0.4377,0.5623,2010-01-01..2010-12-31,0.515,0.502
+sent_net_hl21,EWMA over time (half-life 21 days) of ranked sent_net,1 to 4 calendar days + EWMA (half-life 21),2009-07-13,0.4377,0.5623,2010-01-01..2010-12-31,0.515,0.272
+sent_act,"rank among members of: bullish plus bearish, same days",1 to 4 calendar days,2009-07-13,0.0988,0.9012,2010-01-01..2010-12-31,0.12,1.0
+sent_act_hl5,EWMA over time (half-life 5 days) of ranked sent_act,1 to 4 calendar days + EWMA (half-life 5),2009-07-13,0.4378,0.5622,2010-01-01..2010-12-31,0.515,0.5
+sent_act_hl21,EWMA over time (half-life 21 days) of ranked sent_act,1 to 4 calendar days + EWMA (half-life 21),2009-07-13,0.4378,0.5622,2010-01-01..2010-12-31,0.515,0.241
+sent_flag,"1 if a member has any sentiment usable at t, else 0 (not ranked)",1 to 4 calendar days,2009-07-13,0.0988,0.9012,2010-01-01..2010-12-31,0.12,1.0

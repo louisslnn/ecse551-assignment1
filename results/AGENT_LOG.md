@@ -169,3 +169,136 @@ From this commit on, `src/task3_data.py` and `src/task3_eval.py` are frozen. Fir
 $ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py
 (empty)
 ```
+
+## Phase 1: features and leakage tests (Oct 9)
+
+Started after the group replied "continue, phase 1 now". No model was fitted and no configuration was evaluated, so the experiment log is unchanged (4 rows).
+
+### What was done
+
+- `src/task3_features.py`: 24 return features and 13 sentiment features.
+- `src/task3_train.py`: `fit_model()`, which asserts that every training row is dated strictly before the prediction date. Every Phase 2 fit will go through it.
+- `src/task3_phase1.py`: writes `results/feature_table.csv` (statistics stop at 2010-12-31).
+- `tests/test_leakage.py`: 6 tests, all passing (about 3 minutes).
+
+### Decisions
+
+| # | Decision | Reason |
+|---|---|---|
+| D7 | Windows: `rev_5` needs at least 3 of 5 values, `rev_21` at least 15 of 21, `mom_12_1` all 231. | `rev_5` then equals the group's 5-day reversal baseline. A mean with a few missing days is still comparable; a partial sum is not. Gaps are rare (5,231 cells in total up to 2010). |
+| D8 | All 8 base return features get smoothed versions (half-lives 5 and 10), giving 24 return features. | Literal reading of the prompt. See Problem 4 for the six that are near-duplicates. |
+| D9 | Smoothing is applied to the ranked feature AFTER missing ranks are set to 0, using the plain recursion `s[t] = a x[t] + (1 - a) s[t-1]`. | One rule for all features. A stock with no recent information drifts back to neutral instead of keeping a stale value forever, which matters for sentiment (90% missing). Cost: a stock that just joined the index has smoothed features shrunk toward 0 for its first days. |
+| D10 | Smoothed features are not re-ranked. | The prompt says "EWMA over time of the ranked feature". They stay inside [-0.5, 0.5]. |
+| D11 | A stock alone in its sector on a given day gets a sector-relative value of 0. Three GICS sector codes (18, 28, 46) contain one stock each. | Its value minus its own mean is 0, which ranks near the middle. |
+| D12 | Sentiment from several calendar days landing on the same trading day is averaged, ignoring NaN. | The scores are intensities between 0 and 4, so a mean keeps Monday on the same scale as other days. A sum would make Monday about three times larger. |
+| D13 | `sent_net` and `sent_act` are NaN when the stock had no messages. | Up to 2010 bullish and bearish are always missing together, and 0 is a real score (9,370 bullish zeros, 24,165 bearish zeros), so NaN is never treated as 0 before ranking. |
+| D14 | `sent_flag` stays 0/1 and is not ranked. | It is already on a fixed scale. |
+| D15 | Sentiment features are stored only for trading days from 2009-07-13 on. | Nothing exists before; saves memory. |
+| D16 | Features are stored as float32. | 37 tables of 8577 x 1314 would need 3.3 GB in float64 on an 8 GB machine. A rank among 500 stocks needs three digits. The truncation test still passes at 1e-10. |
+| D17 | Truncation test dates: one random day from each of 20 equal blocks of 1985-2010 (seed 42), which guarantees the spread. Plus 30 extra random days in 2009-07 to 2010 for sentiment only. | Sentiment exists for only 1.5 of the 26 years, so plain random dates would test it once at most. With the blocks, one of the 20 dates falls in the sentiment period; the 30 extra dates include Mondays. |
+| D18 | Three tests beyond the two mandatory ones: the truncation check must fail on a deliberately leaky feature; the Friday/Saturday/Sunday example of Section 2.5 on a toy table; `mom_12_1` must ignore days t-20..t and day t-252. | A leakage test is only convincing if it is shown to catch a leak, and the two trickiest time shifts get an explicit check. |
+
+### Sentiment mapping for duplicated permnos
+
+606 sentiment columns. 18 belong to securities dropped as empty. 572 are ordinary permnos. Of the 19 duplicated permnos that remain, 16 have a sentiment column:
+
+| Action | Permnos |
+|---|---|
+| mapped to the first security (only it has returns) | 48653, 77157, 79129 |
+| mapped to the `_b` security (only it has returns) | 25232, 25582, 32707, 46703 |
+| excluded, both have returns | 12431, 23536, 79237, 90537 |
+| unused, neither has returns in the sentiment period | 12650, 19166, 21979, 45356, 79057 |
+
+In total 579 columns are mapped to an equity id.
+
+### Problems and disclosures
+
+**Problem 3: the sentiment mapping looks at whether returns exist after 2010.** The group's rule says "has returns during the sentiment period", which runs to 2013. The function therefore checks whether each of the two securities has any return from 2009-07-10 on, test period included, and during exploration the agent printed the number of non-NaN return cells per duplicated permno for 2009-07 to 2010 and for 2011 to 2013. No return value, statistic or prediction from the test period was looked at. It changes one case: for 12431 the second security only has returns from 2011, so with data up to 2010 the sentiment would be mapped to the first one, and with the full period it is excluded. The effect is to remove information (31 member-days up to 2010), not to add any. The mapping is a fixed cleaning step, like dropping the 21 empty columns, and is the one input the truncation test does not recompute.
+
+**Problem 4: six smoothed features are near-duplicates of their base feature.** Correlation with the base feature over member cells, 1990-2010: `mom_12_1_hl5` 0.98, `mom_12_1_hl10` 0.97, `vol_level_hl5` 0.99, `vol_level_hl10` 0.97, and the same 0.98 / 0.97 for the two smoothed `mom_12_1_sec`. The base features already move slowly, so smoothing them changes little. Lasso will pick between near-identical columns almost arbitrarily, which makes the "which coefficients are nonzero" table harder to read. Status: kept, question put to the group.
+
+**Problem 5: sentiment is sparse.** In 2010 only 270 of 500 members have a sentiment column at all, and on an average day only 12% of members (about 60 stocks) have a usable score. The raw sentiment features are 0 for the other 88%. Smoothed versions are nonzero for 51%. This is below the 100 predictions per day the protocol asks for if a model used raw sentiment alone, so sentiment can only be an addition to the return features. Status: reported.
+
+**Limitation: sector codes are static.** The metadata gives one GICS code per security for the whole of 1980-2013, and GICS did not exist before 1999. The sector-relative features in the early years therefore use a classification assigned later. This is a property of the data provided; it is not something the truncation test can detect.
+
+**Fix during the phase:** the first run of the truncation test crashed for dates before 2009-07 because the truncated sentiment table was empty. The test now checks that no sentiment is dated before such a date and skips the recomputation. `task3_features.py` was not changed.
+
+**Fix during the phase:** the first version of the feature table had an empty correlation column, because `.stack()` keeps NaN in pandas 3 (the same cause as Problem 2). It now uses a boolean mask.
+
+### Feature table (statistics up to 2010-12-31)
+
+Coverage is the share of members with a real, not filled, value, averaged from the first available date to 2010-12-31. For smoothed features it is the share of members whose value is not exactly 0. Fill fraction is 1 minus coverage. Full table with formulas: `results/feature_table.csv`.
+
+| Feature | Lookback (trading days) | First available | Mean coverage | Fill fraction |
+|---|---|---|---|---|
+| `rev_1` | 1 | 1980-05-23 | 0.9978 | 0.0022 |
+| `rev_5`, `rev_5_sec` | 5 | 1980-05-28 | 0.9978 | 0.0022 |
+| `rev_21`, `rev_21_sec` | 21 | 1980-06-13 | 0.9975 | 0.0025 |
+| `mom_12_1`, `mom_12_1_sec` | 252 | 1981-05-22 | 0.9869 | 0.0131 |
+| `vol_level` | all past, 100-day burn-in | 1980-05-22 | 0.9979 | 0.0021 |
+| smoothed return features (`_hl5`, `_hl10`) | base + EWMA | same as base | same as base (momentum: 0.9907) | same as base (momentum: 0.0093) |
+| `sent_bull`, `sent_bear`, `sent_net`, `sent_act`, `sent_flag` | 1 to 4 calendar days | 2009-07-13 | 0.0986 (2010 only: 0.1197) | 0.9014 |
+| smoothed sentiment features (`_hl5`, `_hl21`) | base + EWMA | 2009-07-13 | 0.437 (2010 only: 0.515) | 0.563 |
+
+The expanding training window (default 5) therefore starts on 1981-05-22.
+
+### Tests
+
+`tests/test_task3_pipeline.py`: 12 passed. `tests/test_leakage.py`: 6 passed. The truncation test passes at a tolerance of 1e-10 on all 20 + 30 dates; on the one date inspected by hand (2000-06-15) the largest difference was exactly 0.0.
+
+### Frozen-harness diff at the Phase 1 checkpoint
+
+```
+$ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py
+(empty)
+```
+
+## Phase 1 follow-up (Oct 9, after the checkpoint)
+
+### Instructions received
+
+1. Drop the six near-duplicate smoothed features and use the remaining 18 return features.
+2. Decide the duplicate-permno sentiment mapping using data up to 2010-12-31 only, and freeze it.
+3. Re-run all tests, regenerate `results/feature_table.csv`, and stop.
+
+### Changes made
+
+| # | Change | Reason |
+|---|---|---|
+| C6 | Removed `mom_12_1_hl5`, `mom_12_1_hl10`, `mom_12_1_sec_hl5`, `mom_12_1_sec_hl10`, `vol_level_hl5`, `vol_level_hl10`. `task3_features.py` now smooths only the features listed in `RETURN_SMOOTHED` (`rev_1`, `rev_5`, `rev_21`, `rev_5_sec`, `rev_21_sec`). 18 return features remain: 8 base and 10 smoothed. | Group decision. The six had a correlation of 0.97 to 0.99 with their base feature (Problem 4), because momentum and volatility already move slowly. Near-identical columns would make the Lasso choice between them arbitrary. This replaces decision D8 and closes Problem 4. |
+| C7 | `sentiment_column_map()` now checks for returns between 2009-07-10 and 2010-12-31 only (`SENT_MAP_END`). | Group decision, so that no decision depends on test-period data. This replaces the rule described in Problem 3. |
+| C8 | The mapping is frozen in `results/sentiment_column_map.json`. A new test asserts that the function returns exactly that mapping, and that the result is identical when every row after 2010-12-31 is removed from the returns. | So the mapping cannot drift, and so its independence from the test period is checked, not just stated. |
+
+### Disclosure on the earlier mapping rule
+
+During Phase 1 exploration the agent printed, for each of the 16 duplicated permnos that have a sentiment column, the number of non-NaN return cells and the number of member days in 2011 to 2013, next to the same counts for 2009-07 to 2010. These are availability counts only. No return value, statistic, plot or prediction from the test period was viewed or computed. The first version of the mapping rule used that availability ("any return from 2009-07-10 on"). The rule was then changed (C7) so that no decision depends on test-period data.
+
+The change affects one permno. 12431: the first security has returns in 2009-07 to 2010 and the second does not, so the sentiment is now mapped to `12431` (it was excluded under the first rule). The other 15 are unchanged.
+
+Known consequence, stated because the availability counts were already seen: the second security `12431_b` starts trading during the test period, so from then on the sentiment column of permno 12431 stays attached to `12431` although two securities share the permno. This is accepted as the price of a rule that uses development data only.
+
+### Frozen sentiment mapping (data up to 2010-12-31)
+
+| Action | Permnos |
+|---|---|
+| mapped to the first security (only it has returns) | 12431, 48653, 77157, 79129 |
+| mapped to the `_b` security (only it has returns) | 25232, 25582, 32707, 46703 |
+| excluded, both have returns | 23536, 79237, 90537 |
+| unused, neither has returns | 12650, 19166, 21979, 45356, 79057 |
+
+580 of the 606 sentiment columns are mapped to an equity id (572 ordinary permnos and 8 duplicated ones).
+
+### Regenerated feature table
+
+31 features: 18 return and 13 sentiment. The return rows are unchanged apart from the six removed. The sentiment coverage moved slightly because of 12431: 0.0988 up to 2010 (was 0.0986) and 0.1200 in 2010 (was 0.1197).
+
+### Tests
+
+All 19 tests pass: 12 in `tests/test_task3_pipeline.py` and 7 in `tests/test_leakage.py` (the 6 from the checkpoint plus the new mapping test).
+
+### Frozen-harness diff
+
+```
+$ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py
+(empty)
+```
