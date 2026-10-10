@@ -2,6 +2,7 @@
 
 Run from the repository root:  python -m pytest tests/test_walkforward.py -v
 """
+import subprocess
 import sys
 from pathlib import Path
 
@@ -103,3 +104,24 @@ def test_logged_refits_never_train_on_or_after_the_refit_date():
         assert (table.refit_date <= "2010-12-31").all(), path.name       # Phase 2 stays in the dev period
         n_checked += len(table)
     assert n_checked > 0
+
+
+def test_phase3_refits_never_train_on_or_after_the_refit_date():
+    """Same check for the 1990-2013 walk-forward of the frozen finalists (Phase 3)."""
+    n_checked = 0
+    for path in (REPO / "results").glob("phase3_*_*.csv"):
+        table = pd.read_csv(path, nrows=0)
+        if "train_last" not in table.columns:        # daily P&L and IC files have no refits
+            continue
+        table = pd.read_csv(path, parse_dates=["refit_date", "train_last"])
+        assert (table.train_last < table.refit_date).all(), path.name
+        n_checked += len(table)
+    if (REPO / "results" / "test_results.csv").exists():
+        assert n_checked > 0
+
+
+def test_final_configs_unchanged_since_the_freeze_commit():
+    """results/final_configs.json must be identical to the version the group committed."""
+    freeze = (REPO / "results" / "FINALISTS_COMMIT.txt").read_text().strip()
+    diff = subprocess.run(["git", "diff", "--quiet", freeze, "--", "results/final_configs.json"], cwd=REPO)
+    assert diff.returncode == 0

@@ -8,7 +8,7 @@ Entries are added in order and never rewritten. Dates are in 2026.
 | What | Hash |
 |---|---|
 | Phase 0 frozen harness (`src/task3_data.py`, `src/task3_eval.py`) | `cceeb15e720d5b637c2082d1da9a74c5f101496a` |
-| Phase 3 frozen finalists (`results/final_configs.json`) | pending |
+| Phase 3 frozen finalists (`results/final_configs.json`) | `f817d04c028b0cec2b804a5cfde2a4ca89df9564` |
 
 ## Environment
 
@@ -602,5 +602,131 @@ The Phase 3 output must include the development Sharpe by window and the holding
 
 ```
 $ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py
+(empty)
+```
+
+## Phase 3: freeze recorded, then one test evaluation (Oct 9)
+
+### Freeze
+
+The group committed the frozen finalists as `f817d04c028b0cec2b804a5cfde2a4ca89df9564` ("task3: freeze finalists") and told the agent to start Phase 3. Before running anything the agent checked that this commit contains `results/final_configs.json` and `src/task3_finalists.py`, that the working copies of both are identical to the committed versions, that nothing else is modified apart from the group's own uncommitted edits in `report/`, and that `results/test_results.csv` does not exist yet. The hash was filled into the table at the top of this file. The commit before it, `3cb48b5`, holds the slow-finalist run E066.
+
+### What was done
+
+- `src/task3_phase3.py`, stage `predict`: walk-forward of the three fitted finalists from 1990 to 2013-12-31 with the frozen rules, the slow finalist derived from the MLP predictions, and the two baseline rules. Predictions were saved. Nothing after 2010 was evaluated in this stage.
+- Reproduction check before touching the test period: the development Sharpe of all six was recomputed from the new predictions and compared with the frozen values. All six match to four decimals (4.0640, 5.7837, 5.3944, 2.5310, 2.1757, 0.5196).
+- Stage `test`: one call of the frozen `evaluate()` per finalist and baseline on 2011-01-01 to 2013-12-31, with daily demeaning. The stage refuses to run if `results/test_results.csv` exists. It was run once, at 20:37 on Oct 9.
+- `src/task3_phase3_report.py`: seven figures.
+- `src/task3_truncation_check.py`: an end-to-end lookahead check on real data (see below).
+- `results/FINALISTS_COMMIT.txt` holds the freeze hash, so a test can check that `final_configs.json` is unchanged.
+- No configuration was changed after the test results were seen.
+
+### Decisions
+
+| # | Decision | Reason |
+|---|---|---|
+| D32 | The test evaluations are logged as six rows with `phase = 3` (E067 to E072). Their `dev_sharpe` columns hold development values; `mean_ic`, `ic_tstat`, `holding_period`, `corr_market` and `min_preds_per_day` hold TEST-period values, and the test Sharpe is in `notes`. The complete numbers are in `results/test_results.csv`. | The log has no test columns, and every evaluation must have a row. |
+| D33 | Prediction and evaluation are two separate stages. | A crash during the walk-forward cannot leave the test period half evaluated, and the development reproduction check runs before any test number exists. |
+| D34 | The walk-forward for 1990-2013 is one run with the refit dates counted from the first trading day of 1990, exactly as in development. | Stated in `final_configs.json`. It makes the development predictions reproduce exactly and avoids choosing a new refit calendar for the test period. |
+| D35 | In the cumulative P&L figures each series is divided by its own daily standard deviation. | The models' predictions have different scales, so raw P&L is not comparable; after scaling, the slope of a line is proportional to its Sharpe. |
+
+### Test results (2011-01-01 to 2013-12-31, 753 days, evaluated once)
+
+| Finalist | From row | Test Sharpe | 2011 | 2012 | 2013 | Mean IC | IC t-stat | Holding period (days) | Corr. with market | Expected range | Inside |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Lasso | E012 | 1.07 | 1.31 | 0.64 | 1.22 | 0.014 | 2.67 | 1.48 | 0.38 | 0.6 to 2.4 | yes |
+| Random forest | E058 | 3.65 | 3.20 | 3.69 | 4.15 | 0.018 | 5.55 | 0.94 | 0.39 | 1.2 to 3.3 | **no, above** |
+| MLP | E059 | 3.01 | 2.02 | 3.22 | 4.09 | 0.018 | 5.65 | 1.04 | 0.31 | 1.2 to 3.3 | yes |
+| MLP, smoothed (half-life 5) | E066 | 1.40 | 0.11 | 1.54 | 2.85 | 0.007 | 1.84 | 4.51 | 0.40 | 0.35 to 2.0 | yes |
+| Baseline: 5-day reversal | E005 | 0.73 | 1.55 | -0.32 | 0.85 | 0.008 | 1.87 | 1.61 | 0.15 | 0.2 to 1.8 | yes |
+| Baseline: 12-1 momentum | E006 | 0.79 | 0.75 | 0.48 | 1.15 | 0.019 | 3.21 | 11.44 | 0.12 | -0.4 to 0.8 | yes |
+
+At least 491 predictions per day for every row. The standard error of a 3-year Sharpe is about 0.58. The yearly values of the reversal baseline are identical to the ones in the group's notebook (1.55, -0.32, 0.85), which confirms that the harness scores the test period the same way as in Phase 0.
+
+### Development values next to the test values (requested by the group)
+
+| Finalist | Row | Dev Sharpe 1990-2010 | 1990-94 | 1995-99 | 2000-04 | 2005-10 | Dev holding period | Test Sharpe 2011-13 | Test holding period |
+|---|---|---|---|---|---|---|---|---|---|
+| Lasso | E012 | 4.06 | 7.48 | 4.77 | 2.60 | 1.81 | 1.39 | 1.07 | 1.48 |
+| Random forest | E058 | 5.78 | 10.19 | 6.49 | 4.14 | 2.70 | 1.09 | 3.65 | 0.94 |
+| MLP | E059 | 5.39 | 9.20 | 6.33 | 3.86 | 2.69 | 1.27 | 3.01 | 1.04 |
+| MLP, smoothed | E066 | 2.53 | 4.02 | 3.46 | 1.71 | 1.43 | 5.56 | 1.40 | 4.51 |
+| 5-day reversal | E005 | 2.18 | 4.09 | 2.59 | 1.39 | 1.25 | 1.56 | 0.73 | 1.61 |
+| 12-1 momentum | E006 | 0.52 | 0.85 | 1.22 | -0.01 | 0.23 | 10.91 | 0.79 | 11.44 |
+
+### The random forest is above the range written down before the test
+
+Before the freeze this log said that a forest above 3.3 "would be surprising" and "should be checked before it is believed". The test value is 3.65. Checks made after seeing it, none of which changes a configuration or evaluates the test period again:
+
+| Check | Result |
+|---|---|
+| Development Sharpe reproduced from the Phase 3 predictions | exact for all six |
+| Baseline test values against the group's notebook | identical by year |
+| Refit records of the 1990-2013 run (97 Lasso, 25 forest, 25 MLP refits): last training day before the refit date | true for all (test added) |
+| `task3_truncation_check.py lasso 2012-06-29`: all raw data after 2012-06-29 removed, features, targets and walk-forward recomputed from scratch, predictions for 1990 to 2012-06-29 compared with the saved ones | identical, largest difference 0 over 5,672 days |
+| `task3_truncation_check.py rf 2012-06-29`: the same for the forest | identical, largest difference 0 over 5,672 days |
+| Frozen harness and `final_configs.json` | unchanged |
+
+So the forest's predictions through the first half of the test period are provably independent of any later data. No sign of a bug was found.
+
+A likely reason the range was too low, found after the fact and therefore weaker than a prediction: the "no decay" reference was the pooled 2005-2010 Sharpe (2.70), and that number is pulled down by 2008. The forest's daily P&L had a standard deviation of 1.86 in 2008 against 1.40 for 2005-2010 as a whole and 1.00 in the test period. Its yearly development Sharpes were 3.14, 5.17, 2.13, 1.10, 2.69 and 3.92 for 2005 to 2010 (mean 3.02), and 3.18 for 2009-2010 pooled. The test value of 3.65 is in line with the calm years. Its rank IC did not rise: 0.020 in 2005-2010 and 0.018 in the test period. The forest did not predict better in 2011-2013; its P&L was steadier.
+
+How unusual is it: 3.65 is 0.35 above the top of the range, and 1.6 standard errors above the no-decay reference of 2.70.
+
+### Interpretation
+
+- **All four finalists beat both baselines on the test period.** The forest (3.65) and the MLP (3.01) are far above the assignment's benchmark of about 2 for one-day holding periods, and their IC t-statistics (5.6) are large for three years. The Lasso (1.07) is positive but only 0.34 above the reversal rule, about 0.6 standard errors.
+- **The decay stopped for the non-linear models but not for the linear ones.** From 2005-2010 to the test period the Lasso went from 1.81 to 1.07 and the reversal rule from 1.25 to 0.73, both a factor of about 0.6, which is the "decay continues" scenario. The forest and the MLP went from 2.70 to 3.65 and from 2.69 to 3.01. The gap between linear and non-linear models, about 0.9 in 2005-2010, is about 2 to 2.6 on the test period. This is one 3-year sample.
+- **Forest against MLP:** 3.65 against 3.01 is a difference of about one standard error and is not evidence that one is better.
+- **The slow finalist** (holding period 4.5 days, Sharpe 1.40) is above the assignment's 0.6 benchmark for long holding periods, but almost all of it comes from 2012 and 2013 (0.11 in 2011), and its IC t-statistic is 1.84.
+- **Momentum** has the highest test IC (0.019) but a Sharpe of only 0.79.
+
+### Limitations that apply to the test numbers
+
+1. **No transaction costs.** The forest's holding period on the test period is 0.94 days: the whole book is replaced every day. The harness has no cost model.
+2. **Execution at the close.** On the development period, using predictions one day late cost the fitted models about a third of their Sharpe (rows E061 to E064). That diagnostic was NOT run on the test period, because it would be a second evaluation of the test period. Running it is a group decision and would have to be disclosed.
+3. **Not market neutral.** The correlation of the P&L with the equal-weight market return is 0.31 to 0.40 on the test period for the finalists, higher than in development (0.24 to 0.29).
+4. **One test period of three years.** Standard error about 0.58 per Sharpe.
+5. **72 rows in the experiment log**, of which 62 development configurations and diagnostics were tried before the freeze. Two finalists were chosen at the edge of an extended grid by a margin of about one standard error.
+6. **Static sector codes** and a sentiment mapping fixed with data up to 2010 (see Phase 1). Sentiment is not used by any finalist.
+
+### Figures (`results/figures/`, PDF, 14 pt fonts)
+
+| File | Content |
+|---|---|
+| `phase3_test_cumulative_pnl.pdf` | cumulative P&L on the test period, finalists and baselines |
+| `phase3_test_cumulative_ic.pdf` | cumulative rank IC on the test period |
+| `phase3_sharpe_by_window.pdf` | Sharpe in the four development windows and the test period |
+| `phase3_sharpe_vs_holding.pdf` | all development runs in grey; each finalist from development (hollow) to test (filled) |
+| `phase3_lasso_nonzero_frequency.pdf` | share of the 97 Lasso refits in which each coefficient is nonzero |
+| `phase3_rf_feature_importance.pdf` | mean feature importance over the 25 forest refits |
+| `phase3_full_cumulative_pnl.pdf` | cumulative P&L 1990-2013, development period labelled as used for selection, test period shaded |
+
+### Problem 7: one unexplained failure of a leakage test (not reproduced)
+
+After the test evaluation, one run of the full test suite reported `1 failed, 27 passed`. The failing test was `tests/test_leakage.py::test_truncation_all_features_20_dates`, which had passed in every earlier run. The agent had kept only the last two lines of that run's output, so the assertion message (which names the date and the feature) is lost. That was a mistake in how the run was recorded.
+
+What was done to reproduce it, with no code change in between:
+
+| Attempt | Result |
+|---|---|
+| The failing test alone | passed |
+| The full suite, twice more | 28 passed, both times |
+| `build_return_features` recomputed 12 times on the full data and compared bit for bit with a first run | all 18 tables identical every time |
+| The logic of the failing test repeated 6 times (120 truncated recomputations of the return features, plus sentiment where it exists), printing every mismatch | 0 mismatches |
+| `np.log(sig)` on 60 truncated tables against the full table (the one feature that uses a non-exact math function) | bit-identical |
+
+Status: **not explained and not reproduced**. `task3_features.py` and `tests/test_leakage.py` have not changed since the Phase 1 commit. The code is deterministic as far as these checks can tell, and independent evidence agrees: the Phase 3 run reproduced all six development Sharpes to four decimals, and the two real-data truncation checks reproduced 5,672 days of Lasso and forest predictions with a largest difference of exactly 0. The agent's best guess is a transient problem of the machine during that run (it has 8 GB of memory and was under heavy memory pressure during Phase 3), but there is no evidence for that guess. If the test fails again, the full output must be kept.
+
+### Tests at the Phase 3 checkpoint
+
+28 tests: 12 in `tests/test_task3_pipeline.py`, 7 in `tests/test_leakage.py`, 9 in `tests/test_walkforward.py` (two new: the refit records of the 1990-2013 run, and `final_configs.json` unchanged since the freeze commit). Last two full runs: 28 passed. One earlier run had the unexplained failure described in Problem 7.
+
+### Frozen files at the Phase 3 checkpoint
+
+```
+$ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py
+(empty)
+$ git diff $(cat results/FINALISTS_COMMIT.txt) -- results/final_configs.json
 (empty)
 ```
