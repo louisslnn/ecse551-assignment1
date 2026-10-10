@@ -1,0 +1,133 @@
+{
+ "purpose": "Frozen before any test-period run. Phase 3 evaluates exactly these once.",
+ "harness_commit": "cceeb15e720d5b637c2082d1da9a74c5f101496a",
+ "development_period": [
+  "1990-01-01",
+  "2010-12-31"
+ ],
+ "test_period": [
+  "2011-01-01",
+  "2013-12-31"
+ ],
+ "period_convention": "periods are prediction dates; a prediction made on day t earns the return of day t+1",
+ "evaluation": {
+  "function": "task3_eval.evaluate",
+  "demean": true
+ },
+ "walk_forward": {
+  "panel_start": "1981-05-22",
+  "refit_dates": "every refit_every trading days counted from the first trading day of 1990, continued without change through 2013-12-31",
+  "training_rows": "member rows of the train_window_days trading days strictly before the refit date",
+  "standardization": "mean and std of the training rows at each refit",
+  "target": "vadj_c.shift(-1) among members, minus its same-day mean (clipped next-day vol-adjusted return)",
+  "seed": 42,
+  "subsample_rule": "one random draw of `subsample` training rows per refit, numpy default_rng(42)",
+  "smoothing_rule": "P.ewm(halflife).mean() over the whole 1990-2013 prediction series"
+ },
+ "features": [
+  "rev_1",
+  "rev_1_hl5",
+  "rev_1_hl10",
+  "rev_5",
+  "rev_5_hl5",
+  "rev_5_hl10",
+  "rev_21",
+  "rev_21_hl5",
+  "rev_21_hl10",
+  "mom_12_1",
+  "vol_level",
+  "rev_5_sec",
+  "rev_5_sec_hl5",
+  "rev_5_sec_hl10",
+  "rev_21_sec",
+  "rev_21_sec_hl5",
+  "rev_21_sec_hl10",
+  "mom_12_1_sec"
+ ],
+ "finalists": [
+  {
+   "name": "lasso",
+   "source_exp_id": "E012",
+   "spec": {
+    "model": "lasso",
+    "alpha": 0.0001697043268440639
+   },
+   "refit_every": 63,
+   "train_window_days": 756,
+   "subsample": null,
+   "pred_smoothing_halflife": 0,
+   "dev_sharpe_1990_2010": 4.064,
+   "dev_sharpe_2005_2010": 1.8082,
+   "dev_holding_period_days": 1.395
+  },
+  {
+   "name": "rf",
+   "source_exp_id": "E058",
+   "spec": {
+    "model": "rf",
+    "max_depth": 12,
+    "min_samples_leaf": 200
+   },
+   "refit_every": 252,
+   "train_window_days": 756,
+   "subsample": 200000,
+   "pred_smoothing_halflife": 0,
+   "dev_sharpe_1990_2010": 5.7837,
+   "dev_sharpe_2005_2010": 2.6973,
+   "dev_holding_period_days": 1.088
+  },
+  {
+   "name": "mlp",
+   "source_exp_id": "E059",
+   "spec": {
+    "model": "mlp",
+    "hidden": 32,
+    "alpha": 0.0001,
+    "max_epochs": 60
+   },
+   "refit_every": 252,
+   "train_window_days": 756,
+   "subsample": null,
+   "pred_smoothing_halflife": 0,
+   "dev_sharpe_1990_2010": 5.3944,
+   "dev_sharpe_2005_2010": 2.6875,
+   "dev_holding_period_days": 1.27
+  },
+  {
+   "name": "mlp_slow",
+   "source_exp_id": "E066",
+   "spec": {
+    "model": "mlp",
+    "hidden": 32,
+    "alpha": 0.0001,
+    "max_epochs": 60
+   },
+   "refit_every": 252,
+   "train_window_days": 756,
+   "subsample": null,
+   "pred_smoothing_halflife": 5,
+   "dev_sharpe_1990_2010": 2.531,
+   "dev_sharpe_2005_2010": 1.4295,
+   "dev_holding_period_days": 5.562
+  }
+ ],
+ "baselines": [
+  {
+   "name": "baseline_rev_5",
+   "source_exp_id": "E005",
+   "rule": "-vadj_c.rolling(5, min_periods=3).mean()",
+   "dev_sharpe_1990_2010": 2.1757,
+   "dev_sharpe_2005_2010": 1.2531,
+   "dev_holding_period_days": 1.562
+  },
+  {
+   "name": "baseline_mom_12_1",
+   "source_exp_id": "E006",
+   "rule": "vadj_c.rolling(231, min_periods=231).sum().shift(21)",
+   "dev_sharpe_1990_2010": 0.5196,
+   "dev_sharpe_2005_2010": 0.2343,
+   "dev_holding_period_days": 10.907
+  }
+ ],
+ "configurations_tried_before_freezing": 66
+}
