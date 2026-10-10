@@ -22,7 +22,7 @@
 
 The equity data consist of daily excess returns for 1,335 securities over 8,577 trading days (January 2, 1980 to December 31, 2013), a binary S\&P~500 membership indicator of the same shape, and sector metadata (GICS codes). The sentiment data provide daily bullish and bearish scores for 606 stocks on calendar days from July 2009 onward.
 
-Inspecting the data revealed three issues not mentioned in the assignment description. First, 21 permanent identifiers (permnos) appear twice as column headers. The two series sharing an identifier are never identical: their correlation on overlapping days ranges from 0.06 to 0.47, comparable to two unrelated stocks, and in several cases both are index members on the same day. We therefore treat each column as a distinct security. Second, 21 columns contain no data and were removed, leaving 1,314 securities. Third, returns are not restricted to index members: on a typical day about 255 non-members also have returns, while every member has one. Because the dataset only contains stocks that were members at some point between 1980 and 2013, the presence of a non-member's history is itself informative about its future inclusion. We therefore use non-member days only for volatility estimation and feature construction, never as training targets or for evaluation. About 9.2\% of returns are exactly zero, consistent with pre-2001 fractional tick sizes and illiquid days; these are retained.
+Inspecting the data revealed three issues not mentioned in the assignment description. First, 21 permanent identifiers (permnos) appear twice as column headers. The two series sharing an identifier are never identical: their correlation on overlapping days ranges from 0.06 to 0.47, comparable to two unrelated stocks, and in several cases both are index members on the same day. We therefore treat each column as a distinct security. Second, 21 columns contain no data and were removed, leaving 1,314 securities. Third, returns are not restricted to index members: on a typical day about 255 non-members also have returns, while every member has one. Because the dataset only contains stocks that were members at some point between 1980 and 2013, the presence of a non-member's history is itself informative about its future inclusion. We therefore use non-member days only for volatility estimation and feature construction, never as training targets or for evaluation. About 9.2\% of returns are exactly zero, consistent with pre-2001 fractional tick sizes and illiquid days; these are retained. Finally, sector codes are static: each security has a single GICS code for the whole sample, so sector-relative features in the early years rely on a classification assigned later.
 
 Returns were volatility-adjusted with the EWMA filters of the assignment, using $\beta_1 = 0.97$ (variance half-life of about 23 days), $\beta_2 = 0.99$ (mean half-life of about 69 days), an initial variance of $0.02^2$, and a burn-in of 100 observations per stock. Each return is divided by the previous day's estimate, $\tilde r_t = r_t / \hat\sigma_{t-1}$, because $\hat\sigma_t$ depends on $r_t$ itself and would not be known when positions are set. On member days the adjusted returns have a standard deviation of 1.06 and an excess kurtosis of 22.7, and 0.20\% of them exceed 5 in absolute value. We clip adjusted returns to $[-5, 5]$ when they are used as features or training targets, but evaluate on unclipped returns, since these are what a strategy would actually earn. Fig.~\ref{fig:t3_voladj} shows that the adjustment removes most of the time variation in dispersion: the cross-sectional standard deviation of raw returns varies by a factor of about four, whereas the adjusted series stays between 0.6 and 1.1. The remaining dips coincide with crises (1987, 2002, 2008, 2011), when rising correlations inflate total volatility estimates relative to cross-sectional dispersion.
 
@@ -40,15 +40,15 @@ Returns were volatility-adjusted with the EWMA filters of the assignment, using 
 \subsection{Task 3: Evaluation Protocol and Agent-Assisted Experimentation}
 \label{sec:t3_method}
 
-\textit{Prediction and evaluation.} A prediction $\hat r_{t,i}$ is formed at the close of day $t$ for each member stock $i$, using only information available at that time, and is scored against the realized adjusted return $\tilde r_{t+1,i}$. The daily profit-and-loss is $R_t = \sum_i \hat r_{t,i}\,\tilde r_{t+1,i}$, from which we compute the annualized Sharpe ratio $\mathrm{SR} = \sqrt{252}\,\overline{R}/\mathrm{sd}(R)$ over the full period and over sub-windows. We also report the mean daily Spearman correlation between predictions and realized returns (the information coefficient, IC) and its cumulative sum, the average holding period $H_{av}$ defined in the assignment, and the correlation of $R_t$ with an equal-weight long-only portfolio of members. Unless stated otherwise, predictions are demeaned across stocks each day, making the strategy approximately market neutral. Before any model was trained, the evaluation code was validated with three controls: perfect-foresight predictions produced a Sharpe ratio of 16.6 on 2011--2013, far beyond any realistic strategy (confirming that predictions and returns are correctly aligned), random predictions produced a Sharpe ratio of 0.31, well within the noise expected over three years, and an always-long portfolio produced a market correlation of 1.00.
+\textit{Prediction and evaluation.} A prediction $\hat r_{t,i}$ is formed at the close of day $t$ for each member stock $i$, using only information available at that time, and is scored against the realized adjusted return $\tilde r_{t+1,i}$. The daily profit-and-loss is $R_t = \sum_i \hat r_{t,i}\,\tilde r_{t+1,i}$, from which we compute the annualized Sharpe ratio $\mathrm{SR} = \sqrt{252}\,\overline{R}/\mathrm{sd}(R)$ over the full period and over sub-windows. We also report the mean daily Spearman correlation between predictions and realized returns (the information coefficient, IC) and its cumulative sum, the average holding period $H_{av}$ defined in the assignment, and the correlation of $R_t$ with an equal-weight long-only portfolio of members. Unless stated otherwise, predictions are demeaned across stocks each day, removing any net long or short bias in the predictions. Before any model was trained, the evaluation code was validated with three controls: perfect-foresight predictions produced a Sharpe ratio of 16.6 on 2011--2013, far beyond any realistic strategy (confirming that predictions and returns are correctly aligned), random predictions produced a Sharpe ratio of 0.31, well within the noise expected over three years, and an always-long portfolio produced a market correlation of 1.00.
 
 \textit{Why an agent.} Unlike Tasks 1 and 2, Task 3 has a loosely specified model class but a large design space: feature definitions and smoothing, training-window length, refit frequency, market neutrality, and model family. Each configuration requires a full walk-forward simulation over two decades of data. This makes the task well suited to systematic, delegated experimentation. It also makes it highly exposed to the two failure modes the assignment emphasizes: lookahead bias and overfitting through repeated testing. We therefore split responsibilities. Data inspection, cleaning decisions, volatility adjustment, and the evaluation code were developed and validated by the group before the agent was launched (with interactive LLM assistance, Section~\ref{sec:llm}). The agent, Claude Code~\cite{claudecode}, then implemented the features and ran the experiments under a written protocol. The full prompt is reproduced in the submitted notebook.
 
 \textit{Guardrails.} The protocol imposes six constraints. The data-loading and evaluation modules were frozen after the agent reproduced our verified statistics. The agent had no permission to stage or commit, so the frozen commit was created by a group member, and an empty \texttt{git diff} against it was checked at every checkpoint; the agent therefore could not alter how it was scored. The test period (2011--2013) was locked: all selection used a development period, the chosen configurations were committed by a group member before any test evaluation, and each finalist was evaluated on the test period exactly once. Lookahead was controlled in three ways: an assertion that models predicting on day $t$ are trained only on rows up to $t-1$ (whose targets are known at time $t$), a truncation test showing that features recomputed from data ending at $t$ match the full-data features, and two controls (features deliberately shifted one day into the future, which must inflate performance, and within-day permuted targets, which must remove it). Every configuration tried was appended to an experiment log, so the number of configurations tested (\tbd{N}) can be reported alongside any result. The agent was restricted to the model families named in the assignment, and was required to write plain, commented code and to stop for human review at the end of each of its five phases.
 
-\textit{Clarifications before launch.} Before writing any code, the agent read the prompt, inspected the repository without modifying it, and returned a plan of about 51 configurations together with four questions, which we answered. First, the prompt required the perfect-foresight control to exceed a Sharpe ratio of 50, but our own evaluation code gives 16.6 on the test period. Since the threshold only needs to separate a leaking predictor from a realistic one, we lowered it to 10 rather than altering the evaluation code. Second, the agent proposed reusing a Python environment belonging to another project; we instead had it work in our own environment, installing the required packages and recording their versions. Third, we approved renaming the notebook folder to match the repository layout assumed in the prompt. Fourth, we kept version control entirely in human hands: the agent never stages or commits, and the frozen-harness and frozen-finalist commits described above were made by a group member at the corresponding checkpoints. We also accepted the agent's proposed defaults: all coverage and fill statistics in the development phases are restricted to data up to 2010, the Lasso penalty grid is chosen from the first training window only, the expanding training window starts once all return features exist (mid-1981), and the number of MLP epochs is selected on the most recent 20\% of each training window before refitting on the whole window. At the first checkpoint, the agent's extracted code reproduced every statistic from our exploration exactly. It also found one error in our exploratory code: the fraction of extreme adjusted returns had been divided by all date-by-stock cells, including empty ones, rather than by the observed values, understating it by a factor of about 2.6. The corrected value is used in Section~\ref{sec:t3_data}.
+\textit{Clarifications before launch.} Before writing any code, the agent read the prompt, inspected the repository without modifying it, and returned a plan of about 51 configurations together with four questions, which we answered. First, the prompt required the perfect-foresight control to exceed a Sharpe ratio of 50, but our own evaluation code gives 16.6 on the test period. Since the threshold only needs to separate a leaking predictor from a realistic one, we lowered it to 10 rather than altering the evaluation code. Second, the agent proposed reusing a Python environment belonging to another project; we instead had it work in our own environment, installing the required packages and recording their versions. Third, we approved renaming the notebook folder to match the repository layout assumed in the prompt. Fourth, we kept version control entirely in human hands: the agent never stages or commits, and the frozen-harness and frozen-finalist commits described above were made by a group member at the corresponding checkpoints. We also accepted the agent's proposed defaults: all coverage and fill statistics in the development phases are restricted to data up to 2010, the Lasso penalty grid is chosen from the first training window only, the expanding training window starts once all return features exist (mid-1981), and the number of MLP epochs is selected on the most recent 20\% of each training window before refitting on the whole window. At the first checkpoint, the agent's extracted code reproduced every statistic from our exploration exactly. It also found one error in our exploratory code: the fraction of extreme adjusted returns had been divided by all date-by-stock cells, including empty ones, rather than by the observed values, understating it by a factor of about 2.6. The corrected value is used in Section~\ref{sec:t3_data}. The agent also disclosed two minor deviations from the test lockout. In Phase 1 it printed counts of available returns (not their values) in 2011--2013 to decide how to map sentiment onto duplicated identifiers; we then required the mapping to be decided on data up to 2010 only. In addition, periods are defined by prediction date, so the last development prediction (December 31, 2010) is scored on the first test-period return. Finally, while validating the evaluation code before the agent was launched, we evaluated the 5-day reversal baseline through 2013, so its test-period performance was known to us and to the agent, which read our notebook. The reversal rule is not fitted and played no role in model selection, but the expected test range we report for it is not fully blind. After the test evaluation, one run of the test suite reported a single failure of the truncation test that could not be reproduced in \tbd{N} subsequent runs; we report it as unexplained.
 
-\textit{Walk-forward design.} Features are computed from adjusted returns (1-, 5- and 21-day reversal, 12-1 month momentum, volatility level, and sector-relative and temporally smoothed versions) and, from 2009 onward, from sentiment, which is lagged by one trading day to avoid using posts made after the close. All features are ranked across stocks each day. Models are refit on a rolling schedule (every 63 trading days for Lasso, every 252 for random forest and MLP) using a trailing training window, and are selected on walk-forward predictions for 1990--2010, favouring consistency across sub-windows over the highest aggregate Sharpe ratio. Because sentiment begins in July 2009, sentiment-based models could only be developed on 2010, which severely limits what can be concluded about them. \tbd{adjust refit schedule, windows and feature list to what the agent actually ran}
+\textit{Walk-forward design.} The agent built 18 return-based features from the clipped adjusted returns: 1-, 5- and 21-day reversal (the mean adjusted return over the last 1, 5 and 21 days), 12-1 month momentum (the sum over days $t-251$ to $t-21$), the log volatility estimate, sector-relative versions of the reversal and momentum features (net of the same-day mean of the stock's GICS sector), and exponentially smoothed versions with half-lives of 5 and 10 days. Six further smoothed features were dropped because their correlation with the unsmoothed versions exceeded 0.97, which would have made the Lasso's choice among them arbitrary. Sentiment features (bullish, bearish, net and total scores, raw and smoothed) are lagged by one trading day so that posts made after the close are never used. All features are ranked across member stocks each day, and standardized at each refit using the training rows only. The training target is the next-day clipped adjusted return, demeaned across stocks. Models are refit on a rolling schedule (every 63 trading days for Lasso, every 252 for random forest and MLP) on a trailing three-year window, which performed at least as well as five-year and expanding windows. Configurations were selected on walk-forward predictions for 1990--2010, favouring consistency across four sub-windows over the highest aggregate Sharpe ratio. Sentiment coverage is sparse: in 2010 only 270 of the 500 members have a sentiment series, and on a given day only about 12\% have a usable score. Sentiment could therefore only be added to the return features, and sentiment-based models could only be developed on 2010.
 
 
 % ------------------------------------------------------------------
@@ -57,55 +57,109 @@ Returns were volatility-adjusted with the EWMA filters of the assignment, using 
 \subsection{Task 3: Return Prediction}
 \label{sec:t3_results}
 
-\textit{Development period.} Table~\ref{tab:t3_dev} summarizes the development-period results for the baselines and the best configuration of each model family. \tbd{2--3 sentences: which family did best, whether performance was consistent across 1990--1999 and 2000--2010, typical holding periods}. Across the \tbd{N} configurations tried, \tbd{one sentence on the spread of results, e.g. how many had positive development Sharpe}. The leakage controls behaved as expected: shifting features one day into the future raised the development Sharpe ratio from \tbd{x} to \tbd{y}, while permuting the training targets reduced it to \tbd{z}.
+\textit{Development period.} Table~\ref{tab:t3_dev} summarizes the development-period results for the baselines and the best configuration of each model family, selected among \tbd{N} configurations. All fitted models beat the unfitted 5-day reversal rule, and the ordering of random forest and MLP above Lasso above reversal holds in every sub-window. Differences within a family are not reliable, however: the standard error of a 21-year Sharpe ratio is roughly 0.22, and many configurations were compared on the same data.
+
+Two features of these results call for caution. First, performance decays steadily: every model loses about three quarters of its Sharpe ratio between 1990--1994 and 2005--2010. This is the pattern the assignment warns about, and it makes the last window the best guide to test performance. Second, the Sharpe ratios are far above the assignment's benchmark of about 2 for one-day holding periods. The controls give no sign of leakage: shifting features one day into the future raises the development Sharpe ratio to 68.3, about 17 times that of the corresponding real Lasso, while shuffling the training targets within each day reduces it to $-0.02$. The evaluation does, however, ignore transaction costs and assume that trades execute at the same closing prices used to form the features, and holding periods of 1.1 to 1.4 days imply almost complete daily turnover. Moreover, before 2001 prices were quoted in fractions of a dollar, so part of the short-horizon predictability in the early years likely reflects bid-ask bounce rather than a tradable effect. To measure this dependence, we re-scored each finalist with its predictions applied one day late (Table~\ref{tab:t3_delay}). The fitted models lose about a third of their Sharpe ratio, while the 5-day reversal rule loses nothing, so a sizeable part of what the models add over the simple rule depends on trading at the same close used to form the prediction. In 2005--2010, the delayed Lasso (1.16) no longer beats the delayed reversal rule (1.34), although the random forest (1.96) and MLP (2.19) still do. Daily demeaning also does not make the strategies market neutral: the correlation of their P\&L with the equal-weight market remains between 0.21 and 0.29. Finally, the shuffled-target control shows that window-level Sharpe ratios near 1 are weak evidence on their own: although near zero overall, it reaches 1.22 in 1990--1994, because a model trained on noise still outputs a random combination of genuinely predictive features.
 
 \begin{table}[t]
-\caption{Task 3 development-period results (walk-forward, 1990--2010). SR: annualized Sharpe ratio; IC: mean daily Spearman correlation; $H_{av}$: average holding period in days; $\rho_{\mathrm{mkt}}$: correlation with an equal-weight long-only portfolio.}
-\label{tab:t3_dev}
+\caption{Delayed-execution diagnostic (development period, 1990--2010): Sharpe ratio when each prediction is applied on time and one day late.}
+\label{tab:t3_delay}
 \centering
-\begin{tabular}{lccccc}
+\small
+\begin{tabular}{lccc}
 \hline
-Model & SR & SR 90s & SR 00s & IC & $H_{av}$ \\
+Model & On time & One day late & Late, 05--10 \\
 \hline
-5-day reversal & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
-12-1 momentum  & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
-Lasso          & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
-Random forest  & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
-MLP            & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+5-day reversal & 2.18 & 2.29 & 1.34 \\
+Lasso          & 4.06 & 2.70 & 1.16 \\
+Random forest  & 5.78 & 3.81 & 1.96 \\
+MLP            & 5.39 & 3.55 & 2.19 \\
 \hline
 \end{tabular}
 \end{table}
 
-\textit{Test period.} Table~\ref{tab:t3_test} and Fig.~\ref{fig:t3_test} report the single evaluation of the finalists on 2011--2013. With three years of test data, the standard error of the Sharpe estimate is roughly $1/\sqrt{3} \approx 0.58$, so only test Sharpe ratios above about 1.0 to 1.2 provide meaningful evidence of predictive power. \tbd{interpretation: which finalists clear that bar, if any; whether the P\&L rises steadily or is driven by a few episodes; agreement between Sharpe and cumulative IC}. \tbd{holding period vs Sharpe trade-off from prediction smoothing, related to the assignment's benchmarks}. \tbd{sentiment result, with the caveat about the short development window}.
+\begin{table}[t]
+\caption{Task 3 development-period results (walk-forward predictions, 1990--2010, demeaned). SR: annualized Sharpe ratio, overall and by window; $H_{av}$: average holding period in days.}
+\label{tab:t3_dev}
+\centering
+\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lcccccc}
+\hline
+Model & SR & 90--94 & 95--99 & 00--04 & 05--10 & $H_{av}$ \\
+\hline
+5-day reversal       & 2.18 & 4.09 & 2.59 & 1.39 & 1.25 & 1.56 \\
+12-1 momentum        & 0.52 & 0.85 & 1.22 & $-0.01$ & 0.23 & 10.91 \\
+Lasso                & 4.06 & 7.48 & 4.77 & 2.60 & 1.81 & 1.39 \\
+Random forest        & 5.78 & 10.19 & 6.49 & 4.14 & 2.70 & 1.09 \\
+MLP                  & 5.39 & 9.20 & 6.33 & 3.86 & 2.69 & 1.27 \\
+MLP, smoothed ($h=5$) & 2.53 & 4.02 & 3.46 & 1.71 & 1.43 & 5.56 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textit{Hyperparameters.} The Lasso penalty was searched over six values from $1.7\times10^{-4}$ to $1.7\times10^{-2}$, the random forest over depths $\{4,6,8\}$ and minimum leaf sizes $\{200, 1000\}$ (with one third of the features considered at each split), and the MLP over 16 or 32 hidden units and two L2 penalties, with the number of epochs chosen on a time-ordered holdout. The best configuration of every family lay at the edge of its grid: the smallest Lasso penalty, the deepest forest with the smallest leaves, and the larger MLP. For the Lasso this is unsurprising: with 18 features and roughly 380{,}000 training rows per window, little regularization is needed, and the selected model is close to ordinary least squares. Because every family's best configuration lay at the edge of its grid, we extended each grid by one step, fixing in advance that a finalist would only be replaced if an extension improved its development Sharpe ratio by more than one standard error (0.22). Setting the Lasso penalty to zero (ordinary least squares) improved the Sharpe ratio by only 0.14, confirming a plateau, so the penalized model was kept. Deeper trees (depth 12) and longer MLP training (up to 60 epochs) cleared the threshold narrowly (by 0.28 and 0.24) and replaced the original finalists. All five extensions improved on their starting point, which suggests that performance keeps rising slowly with model capacity; we stopped there to limit the number of configurations compared on the same data.
+
+\textit{Smoothing and holding period.} Exponentially smoothing the predictions trades Sharpe ratio for holding period (Table~\ref{tab:t3_smooth}). For the MLP, a half-life of 5 days lengthens the holding period from 1.3 to 5.7 days and reduces the development Sharpe ratio from 5.16 to 2.45, which remains well above the 0.8 to 1 that the assignment describes as interesting for holding periods of 3 to 5 days. The slow finalist applies the same smoothing to the final MLP; this choice was fixed before its development performance was computed (Sharpe ratio 2.53, holding period 5.6 days).
 
 \begin{table}[t]
-\caption{Task 3 test-period results (2011--2013), each finalist evaluated once after its configuration was frozen.}
+\caption{Effect of smoothing the predictions with an exponential filter of half-life $h$ days, for the best configurations of the initial grid: development Sharpe ratio / average holding period (days).}
+\label{tab:t3_smooth}
+\centering
+\small
+\begin{tabular}{lccc}
+\hline
+$h$ & Lasso & Random forest & MLP \\
+\hline
+0  & 4.06 / 1.39 & 5.50 / 1.14 & 5.16 / 1.29 \\
+2  & 2.86 / 3.55 & 3.79 / 2.95 & 3.55 / 3.30 \\
+5  & 2.08 / 6.27 & 2.53 / 5.23 & 2.45 / 5.73 \\
+10 & 1.61 / 9.92 & 1.76 / 8.29 & 1.75 / 8.87 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textit{Sentiment.} On 2010, the only development year available for sentiment, adding sentiment features did not improve the Lasso (Sharpe ratios of 0.32 to 0.37 with sentiment against 0.37 to 0.43 without), a sentiment-only Lasso scored $-0.90$, and a random forest using sentiment (1.32) did worse than the long-history random forest on return features alone (3.67). The standard error of a one-year Sharpe ratio is about 1.0, so none of these differences is significant, and no sentiment model was carried forward to the test period.
+
+\textit{Test period.} Table~\ref{tab:t3_test} and Fig.~\ref{fig:t3_test} report the single evaluation of the finalists on 2011--2013. Before this evaluation, the agent recorded an expected range for each test Sharpe ratio: bounded above by the model's 2005--2010 Sharpe ratio (no further decay) and below by one more step of the median decay observed between development windows (a factor of about 0.65), then widened by one standard error on each side. With three years of test data, the standard error of the Sharpe estimate is roughly $1/\sqrt{3} \approx 0.58$, so only test Sharpe ratios above about 1.0 to 1.2 provide meaningful evidence of predictive power. All four finalists beat both baselines. The random forest (3.65) and the MLP (3.01) clear that bar by a wide margin, were profitable in each of the three test years, and have IC $t$-statistics above 5, confirming that their rankings of stocks carry information. Both held or exceeded their 2005--2010 level, whereas the Lasso (1.81 to 1.07) and the reversal rule (1.25 to 0.73) continued to decay. The Lasso's margin over the reversal rule is only about 0.6 standard errors, and the difference between the forest and the MLP, about one standard error, does not establish that either is better.
+
+The random forest exceeded the upper end of its pre-registered range. Before accepting this result, the agent verified that the walk-forward reproduced all development results exactly, that every training window ended before its refit date, and that recomputing features, targets and predictions after deleting all data beyond June 2012 left every prediction up to that date unchanged. No error was found. A plausible explanation, identified only after seeing the result and therefore weaker than a prediction, is that the 2005--2010 reference is depressed by 2008: the forest's mean yearly Sharpe ratio over 2005--2010 is 3.02.
+
+The slow MLP reached a Sharpe ratio of 1.40 with a holding period of 4.5 days, above the 0.8 to 1 that the assignment considers interesting at that horizon. However, almost all of it came in 2012 and 2013 (2011: 0.11), and its IC $t$-statistic of 1.84 is weak.
+
+All test Sharpe ratios exclude transaction costs and assume execution at the close used to form the prediction. Given holding periods of about one day and the one-third reduction under delayed execution observed in development, the fast models would need most of their margin to remain profitable in practice. The P\&L of every finalist is also positively correlated with the equal-weight market (0.31 to 0.40, higher than in development), so part of the test performance may reflect market exposure during a largely rising market. \tbd{post-hoc diagnostics on the frozen test predictions: delayed execution and market-hedged Sharpe}.
+\begin{table}[t]
+\caption{Task 3 test-period results (2011--2013), each finalist evaluated once after its configuration was frozen. Expected: range for the Sharpe ratio recorded before the evaluation.}
 \label{tab:t3_test}
 \centering
+\small
+\setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{lccccc}
 \hline
-Model & SR & IC & $H_{av}$ & $\rho_{\mathrm{mkt}}$ & min $N$/day \\
+Model & Expected & SR & IC $t$ & $H_{av}$ & $\rho_{\mathrm{mkt}}$ \\
 \hline
-5-day reversal & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
-\tbd{finalist 1} & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
-\tbd{finalist 2} & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
-\tbd{finalist 3} & \tbd{} & \tbd{} & \tbd{} & \tbd{} & \tbd{} \\
+5-day reversal        & 0.2 to 1.8    & 0.73 & 1.87 & 1.61  & \tbd{} \\
+12-1 momentum         & $-0.4$ to 0.8 & 0.79 & 3.21 & 11.44 & \tbd{} \\
+Lasso                 & 0.6 to 2.4    & 1.07 & 2.67 & 1.48  & \tbd{} \\
+Random forest         & 1.2 to 3.3    & 3.65 & 5.55 & 0.94  & \tbd{} \\
+MLP                   & 1.2 to 3.3    & 3.01 & 5.65 & 1.04  & \tbd{} \\
+MLP, smoothed ($h=5$) & 0.35 to 2.0   & 1.40 & 1.84 & 4.51  & \tbd{} \\
 \hline
 \end{tabular}
 \end{table}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/fig_t3_test_pnl.pdf}
-\caption{Cumulative P\&L (left) and cumulative rank IC (right) of the finalists and the reversal baseline on the 2011--2013 test period.}
+\includegraphics[width=\columnwidth]{figures/phase3_test_cumulative_pnl.pdf}
+\caption{Cumulative P\&L of the finalists and baselines on the 2011--2013 test period. Each series is divided by its own daily standard deviation, so slopes are comparable across models.}
 \label{fig:t3_test}
 \end{figure}
 
-\textit{Stability over time.} Fig.~\ref{fig:t3_windows} shows the Sharpe ratio by five-year window over the full walk-forward period. \tbd{e.g. whether reversal-type signals weaken after 2000, as the assignment anticipates}. The 1990--2010 windows were used for model selection and are therefore not truly out-of-sample.
+\textit{Stability over time.} Fig.~\ref{fig:t3_windows} shows the Sharpe ratio by five-year window over the full walk-forward period. Short-horizon predictability weakens markedly after 2000, as the assignment anticipates. The linear model and the reversal rule follow this decline into the test period, while the nonlinear models level off after 2005. The 1990--2010 windows were used for model selection and are therefore not truly out-of-sample.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/fig_t3_window_sharpe.pdf}
+\includegraphics[width=\columnwidth]{figures/phase3_sharpe_by_window.pdf}
 \caption{Annualized Sharpe ratio by window for the baselines and finalists. Windows before 2011 belong to the development period.}
 \label{fig:t3_windows}
 \end{figure}
