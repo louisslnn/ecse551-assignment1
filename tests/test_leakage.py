@@ -46,6 +46,23 @@ def sentiment_features_up_to(t, bull, bear, col_map, ind):
     return feats
 
 
+def checksum(table):
+    """A number that changes if any value, index label or column of the table changes."""
+    return int(pd.util.hash_pandas_object(table, index=True).sum())
+
+
+SHARED_TABLES = ["ret", "ind", "meta", "vadj_c", "mem", "bull", "bear"]
+
+
+def shared_checksums(world):
+    """Checksums of everything the tests of this file share through the `world` fixture."""
+    sums = {key: checksum(world[key]) for key in SHARED_TABLES}
+    for group in ["ret_rows", "sent_rows"]:
+        for name, rows in world[group].items():
+            sums[f"{group}/{name}"] = checksum(rows)
+    return sums
+
+
 def worst_mismatch(full_rows, truncated, t):
     """Largest absolute difference at row t between full-data and truncated features."""
     worst_name, worst = "", 0.0
@@ -79,10 +96,13 @@ def world():
     sent_index = sent_feats["sent_bull"].index
     keep = [d for d in dates + sent_dates if d in sent_index]
     sent_rows = {k: v.loc[keep] for k, v in sent_feats.items()}
-    return {"ret": ret, "ind": ind, "meta": meta, "vadj_c": vadj_c, "mem": mem,
-            "bull": bull, "bear": bear, "col_map": col_map, "dates": dates,
-            "sent_dates": sent_dates, "ret_rows": ret_rows, "sent_rows": sent_rows,
-            "sent_index": sent_index}
+    world = {"ret": ret, "ind": ind, "meta": meta, "vadj_c": vadj_c, "mem": mem,
+             "bull": bull, "bear": bear, "col_map": col_map, "dates": dates,
+             "sent_dates": sent_dates, "ret_rows": ret_rows, "sent_rows": sent_rows,
+             "sent_index": sent_index}
+    world["checksums_at_start"] = shared_checksums(world)        # to prove no test modifies shared data
+    world["col_map_at_start"] = dict(col_map)
+    return world
 
 
 def test_truncation_all_features_20_dates(world):
@@ -206,3 +226,14 @@ def test_training_window_assertion():
     with pytest.raises(AssertionError, match="lookahead"):
         shuffled = days[[9, 0, 1, 2]]                                  # one future row hidden first
         fit_model(LinearRegression(), X[:4], y[:4], shuffled, t)
+
+
+def test_shared_data_is_not_modified_by_the_tests(world):
+    """Guard against hidden state: after the tests above, the shared tables must be unchanged.
+
+    All tests of this file share one copy of the data (the `world` fixture). If any test or any
+    feature function modified it in place, later tests would depend on test order.
+    Keep this test last in the file.
+    """
+    assert shared_checksums(world) == world["checksums_at_start"]
+    assert world["col_map"] == world["col_map_at_start"]

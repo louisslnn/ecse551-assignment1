@@ -51,9 +51,8 @@ def load_results():
 
 
 def save(fig, name):
-    """Write a figure as PDF and close it."""
+    """Write a figure as PDF. The figure stays open so that a notebook can display it."""
     fig.savefig(FIGURES + name)
-    plt.close(fig)
 
 
 def fig_lasso_grid(table):
@@ -192,6 +191,7 @@ def run_report():
     fig_smoothing_tradeoff(table)
     fig_controls(table)
     fig_cumulative_pnl(table)
+    plt.close("all")
     return table
 
 

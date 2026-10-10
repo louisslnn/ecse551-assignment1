@@ -1,0 +1,44 @@
+# run 2, started 2026-10-10 11:53:40
+# command: python -m pytest tests -v
+# load average at start: { 3.46 4.88 4.56 }
+============================= test session starts ==============================
+platform darwin -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- /Users/louissalanon/miniforge3/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/louissalanon/ecse551-assignment1
+plugins: anyio-4.14.2
+collecting ... collected 30 items
+
+tests/test_leakage.py::test_truncation_all_features_20_dates PASSED      [  3%]
+tests/test_leakage.py::test_truncation_sentiment_30_extra_dates PASSED   [  6%]
+tests/test_leakage.py::test_sentiment_mapping_is_frozen_and_ignores_the_test_period PASSED [ 10%]
+tests/test_leakage.py::test_truncation_check_detects_a_leaky_feature PASSED [ 13%]
+tests/test_leakage.py::test_sentiment_timing_rule_example PASSED         [ 16%]
+tests/test_leakage.py::test_momentum_skips_the_most_recent_month PASSED  [ 20%]
+tests/test_leakage.py::test_training_window_assertion PASSED             [ 23%]
+tests/test_leakage.py::test_shared_data_is_not_modified_by_the_tests PASSED [ 26%]
+tests/test_task3_pipeline.py::test_duplicated_permnos_renamed PASSED     [ 30%]
+tests/test_task3_pipeline.py::test_empty_columns_dropped PASSED          [ 33%]
+tests/test_task3_pipeline.py::test_securities_remaining PASSED           [ 36%]
+tests/test_task3_pipeline.py::test_metadata_index_equals_return_columns PASSED [ 40%]
+tests/test_task3_pipeline.py::test_members_per_day PASSED                [ 43%]
+tests/test_task3_pipeline.py::test_member_cells_always_have_a_return PASSED [ 46%]
+tests/test_task3_pipeline.py::test_non_member_cells_with_a_return PASSED [ 50%]
+tests/test_task3_pipeline.py::test_vadj_count_on_member_cells PASSED     [ 53%]
+tests/test_task3_pipeline.py::test_vadj_std PASSED                       [ 56%]
+tests/test_task3_pipeline.py::test_vadj_excess_kurtosis PASSED           [ 60%]
+tests/test_task3_pipeline.py::test_vadj_fraction_above_5 PASSED          [ 63%]
+tests/test_task3_pipeline.py::test_targets_are_consistent PASSED         [ 66%]
+tests/test_walkforward.py::test_target_is_next_day_return_demeaned PASSED [ 70%]
+tests/test_walkforward.py::test_every_refit_trains_strictly_before_it_predicts PASSED [ 73%]
+tests/test_walkforward.py::test_expanding_window_starts_at_the_first_panel_day PASSED [ 76%]
+tests/test_walkforward.py::test_predictions_do_not_change_when_the_future_is_removed PASSED [ 80%]
+tests/test_walkforward.py::test_permutation_keeps_each_day_but_breaks_the_link PASSED [ 83%]
+tests/test_walkforward.py::test_smoothing_looks_backwards_only PASSED    [ 86%]
+tests/test_walkforward.py::test_shared_toy_data_is_not_modified_by_the_tests PASSED [ 90%]
+tests/test_walkforward.py::test_logged_refits_never_train_on_or_after_the_refit_date PASSED [ 93%]
+tests/test_walkforward.py::test_phase3_refits_never_train_on_or_after_the_refit_date PASSED [ 96%]
+tests/test_walkforward.py::test_final_configs_unchanged_since_the_freeze_commit PASSED [100%]
+
+======================== 30 passed in 179.54s (0:02:59) ========================
+# exit code: 0
+# finished 11:56:40

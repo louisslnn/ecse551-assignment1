@@ -54,33 +54,45 @@ def save_refit_records(name, records, feature_names):
             append_csv(RESULTS / "phase3_mlp_epochs.csv", row)
 
 
-def stage_predict():
-    """Walk forward 1990-2013 for every finalist, save predictions, verify the development Sharpe."""
-    config = load_config()
-    dev_start, dev_end = config["development_period"]
-    ret, ind, meta, sig, vadj, vadj_c, Y, mem = build_targets("data")
+def compute_predictions(config, vadj_c, sig, mem, meta):
+    """Prediction tables 1990-2013 for the four finalists and the two baselines. Nothing is scored.
+
+    Returns (tables, records): tables[name] is a prediction table (days x stocks),
+    records[name] is the list of refit records of a fitted finalist.
+    """
+    dev_start = config["development_period"][0]
     feats, _ = build_return_features(vadj_c, sig, mem, meta)
     assert list(feats) == config["features"], "feature list differs from the frozen one"
     panel = build_panel(feats, config["features"], make_target(vadj_c, mem), mem,
                         config["walk_forward"]["panel_start"], FULL_END)
     del feats
 
-    for old in RESULTS.glob("phase3_*.csv"):      # outputs of an earlier predict run are rebuilt
-        old.unlink()
-    tables = {}
+    tables, records = {}, {}
     for entry in config["finalists"]:
         name, halflife = entry["name"], entry["pred_smoothing_halflife"]
         if halflife > 0:                         # the slow finalist reuses the predictions of `mlp`
             tables[name] = smooth_predictions(tables["mlp"], halflife)    # days <= t only
             continue
         print("walk-forward:", name, entry["spec"], flush=True)
-        preds, records = walk_forward(panel, {name: entry["spec"]}, dev_start, FULL_END,
-                                      entry["refit_every"], entry["train_window_days"], entry["subsample"])
-        tables[name] = preds[name]
-        save_refit_records(name, records[name], panel["names"])
+        preds, recs = walk_forward(panel, {name: entry["spec"]}, dev_start, FULL_END,
+                                   entry["refit_every"], entry["train_window_days"], entry["subsample"])
+        tables[name], records[name] = preds[name], recs[name]
     tables["baseline_rev_5"] = (-vadj_c.rolling(5, min_periods=3).mean()).loc[dev_start:FULL_END]   # days t-4..t
     # rolling(231) at row u covers u-230..u; shift(21) moves it to row t = u+21: days t-251..t-21
     tables["baseline_mom_12_1"] = vadj_c.rolling(231, min_periods=231).sum().shift(21).loc[dev_start:FULL_END]
+    return tables, records
+
+
+def stage_predict():
+    """Walk forward 1990-2013 for every finalist, save predictions, verify the development Sharpe."""
+    config = load_config()
+    dev_start, dev_end = config["development_period"]
+    ret, ind, meta, sig, vadj, vadj_c, Y, mem = build_targets("data")
+    tables, records = compute_predictions(config, vadj_c, sig, mem, meta)
+    for old in RESULTS.glob("phase3_*.csv"):      # outputs of an earlier predict run are rebuilt
+        old.unlink()
+    for name in records:
+        save_refit_records(name, records[name], config["features"])
 
     CACHE.mkdir(parents=True, exist_ok=True)
     dev_pnl, dev_ic = {}, {}

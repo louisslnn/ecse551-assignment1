@@ -730,3 +730,168 @@ $ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.
 $ git diff $(cat results/FINALISTS_COMMIT.txt) -- results/final_configs.json
 (empty)
 ```
+
+## Post-hoc analyses and test-suite audit (Oct 10)
+
+The Phase 3 commit made by the group is `44c2ed5`.
+
+### Instructions received
+
+"continue", with three things to do before the Phase 4 write-up, all labelled as post-hoc analyses of the frozen predictions, with no configuration change and logged as their own rows:
+
+1. Delayed execution on the test period: evaluate `P.shift(1)` for all finalists and baselines on 2011-2013.
+2. Market-hedged Sharpe on the test period: regress each daily P&L on the equal-weight market return as used in `evaluate`; report beta, its t-statistic, the Sharpe of the residual, and each market correlation.
+3. Flaky test: check whether any test depends on shared or mutable state, run the full suite 5 times keeping the complete output, and record the results in Problem 7.
+
+Also: `EXPLAIN.md` must include demo questions on why the forest beat its expected range and how it was checked, what the delayed-execution and market-hedged results mean, and why the Lasso barely beats reversal on the test period.
+
+### What was done
+
+- `src/task3_posthoc.py`, stages `delay` and `hedge`. Both read the predictions and the daily P&L saved by the single test evaluation. Nothing was refitted. Each stage refuses to run a second time.
+- 12 new log rows, E073 to E084, with `phase = 3`, model `posthoc_delayed_execution` or `posthoc_market_hedged`, and notes starting with "POST-HOC".
+- Output files: `results/posthoc_test_delay.csv`, `results/posthoc_test_hedge.csv`.
+
+These analyses were run after the test results were known. They describe the test result; they are not additional out-of-sample tests, and no decision depends on them.
+
+### Decisions
+
+| # | Decision | Reason |
+|---|---|---|
+| D36 | The delayed predictions are `P.shift(1)` of the whole 1990-2013 table, scored with daily demeaning. | Same definition as the development diagnostic. The first test day then uses the prediction made on 2010-12-31. |
+| D37 | "Sharpe of the residual" is reported as the Sharpe of `pnl - beta * market`, which keeps the intercept. | The pure regression residual has mean zero by construction, so its Sharpe would always be 0. What matters is the P&L left after removing the market part. |
+| D38 | Beta is estimated on the test period itself, with classical least-squares standard errors. | Asked that way. With one regressor and 753 days the optimism from fitting in-sample is negligible. |
+| D39 | The market series is `Y.where(mem).mean(axis=1)` over the test period. | It is the series `evaluate()` uses for its market correlation, so the correlations match `test_results.csv` exactly. |
+
+### Post-hoc result 1: delayed execution, 2011-2013
+
+| Finalist | On time | One day late | Share kept | 2011 | 2012 | 2013 | Late IC t-stat |
+|---|---|---|---|---|---|---|---|
+| Lasso | 1.07 | 0.72 | 68% | 0.77 | 0.01 | 1.34 | 1.56 |
+| Random forest | 3.65 | 1.24 | 34% | 0.73 | 0.04 | 2.99 | 1.45 |
+| MLP | 3.01 | 1.02 | 34% | 0.26 | 0.49 | 2.77 | 1.50 |
+| MLP, smoothed | 1.40 | 0.93 | 67% | -0.36 | 1.11 | 2.37 | 0.97 |
+| 5-day reversal | 0.73 | 0.69 | 96% | 1.12 | -0.64 | 1.63 | 0.80 |
+| 12-1 momentum | 0.79 | 0.82 | 104% | 0.74 | 0.51 | 1.23 | 3.28 |
+
+Reading: on the test period the forest and the MLP keep one third of their Sharpe when every position is entered a day late (they kept two thirds on the development period). A day late, the forest is 0.55 above the reversal rule, about one standard error, and most of what remains comes from 2013. Two thirds of the headline result of the two best models therefore depends on the harness assumption that a position can be taken at the same close the prediction uses.
+
+### Post-hoc result 2: market-hedged Sharpe, 2011-2013
+
+| Finalist | Market correlation | Beta | Beta t-stat | R squared | Sharpe unhedged | Sharpe hedged | 2011 | 2012 | 2013 |
+|---|---|---|---|---|---|---|---|---|---|
+| Lasso | 0.382 | 0.591 | 11.3 | 0.146 | 1.07 | 0.70 | 1.36 | 0.22 | 0.51 |
+| Random forest | 0.394 | 0.611 | 11.7 | 0.155 | 3.65 | 3.50 | 3.43 | 3.50 | 3.61 |
+| MLP | 0.309 | 0.545 | 8.9 | 0.096 | 3.01 | 2.81 | 2.12 | 2.99 | 3.52 |
+| MLP, smoothed | 0.401 | 0.453 | 12.0 | 0.161 | 1.40 | 1.04 | 0.09 | 1.19 | 2.17 |
+| 5-day reversal | 0.154 | 3.73 | 4.3 | 0.024 | 0.73 | 0.56 | 1.61 | -0.49 | 0.49 |
+| 12-1 momentum | 0.120 | 129.7 | 3.3 | 0.014 | 0.79 | 0.66 | 0.73 | 0.36 | 0.94 |
+
+The equal-weight market had a Sharpe of 1.10 over the period. Betas are in each strategy's own P&L units and are not comparable across strategies; correlations and t-statistics are.
+
+Reading: every strategy has a clear positive market exposure even though its predictions are demeaned each day. Removing it costs the forest 0.15 and the MLP 0.20, so their test result is not a market effect. It costs the Lasso a third of its Sharpe (1.07 to 0.70), which leaves it 0.14 above the hedged reversal rule (0.56).
+
+### Why the Lasso barely beats reversal on the test period (for `EXPLAIN.md`)
+
+The Lasso's coefficients, read from the 97 refits of the 1990-2013 run (standardized features):
+
+| Period of the refits | Refits | Sum of absolute coefficients (mean) | `rev_1_hl5` (mean) | `rev_1` (mean) |
+|---|---|---|---|---|
+| 1990-1994 | 21 | 0.244 | -0.057 | +0.040 |
+| 2005-2010 | 24 | 0.178 | -0.052 | -0.002 |
+| 2011-2013 | 12 | 0.083 | -0.011 | -0.005 |
+
+The linear relationships the Lasso relies on have faded: its coefficients on the test-period refits are a third of what they were in the early 1990s, and its main coefficient is a fifth. What is left is close to the reversal rule.
+
+### Problem 7, continued: audit of the test suite and five recorded runs
+
+**Does any test depend on shared or mutable state?** Checked by reading every test and every function they call, and then by adding tests that prove it.
+
+| Possible source of hidden state | Finding |
+|---|---|
+| Fixtures shared between tests | `world` (leakage file), `data` / `raw_columns` / `member_vadj` (pipeline file) and `toy` (walk-forward file) are created once per file and shared. No test assigns into them. |
+| In-place modification in `src/` | One function modifies its argument in place: `permute_target_within_day`. Its test passes a copy of the target. `rank_fill_smooth` removes entries from a dict that its caller has just created. `sector_relative` writes into a new table. `load_data` adds a column to a table it has just read. No function writes into `ret`, `ind`, `vadj_c`, `sig`, `mem` or the sentiment tables. |
+| Proof by test | Two new tests, each the last of its file, compare a checksum of all shared tables at the end with the checksum taken when the fixture was built: `test_shared_data_is_not_modified_by_the_tests` and `test_shared_toy_data_is_not_modified_by_the_tests`. Both pass. |
+| `results/cache/` | No test reads it. |
+| Other files read by tests | `sentiment_column_map.json`, the refit record files, `test_results.csv`, `final_configs.json` and `FINALISTS_COMMIT.txt`. The test that failed reads none of them, only `data/`. |
+| Test order | The test that failed is the first test of the first file, so nothing but its own fixture runs before it. Two of the five runs below use other orders. |
+| Random numbers | Every random draw uses a local generator with seed 42. No test uses numpy's global random state. |
+
+Conclusion: no dependence on shared or mutable state, on `results/cache/`, or on test order was found.
+
+**Five full runs with complete output**, saved in `results/test_runs/run_1.txt` to `run_5.txt` (Oct 10, 11:50 to 12:06):
+
+| Run | Order | Result | Time |
+|---|---|---|---|
+| 1 | default (`pytest tests -v`) | 30 passed | 213 s |
+| 2 | default | 30 passed | 180 s |
+| 3 | default | 30 passed | 193 s |
+| 4 | files in reverse order (walk-forward, pipeline, leakage) | 30 passed | 198 s |
+| 5 | leakage tests in reverse order, then pipeline, then walk-forward | 30 passed | 190 s |
+
+In run 5 the shared-data test runs first, so it proves nothing there; in runs 1 to 4 it runs after all the leakage tests.
+
+**Status of Problem 7: still not explained, still not reproduced.** Counting everything since the failure, `test_truncation_all_features_20_dates` has now passed in 7 full-suite runs (2 on Oct 9, 5 on Oct 10) and 1 isolated run, its logic was repeated 6 more times with 0 mismatches, and the full feature computation was repeated 12 times with bit-identical results. The single failure happened on Oct 9 shortly after the Phase 3 jobs, with its output not kept. A transient machine problem remains the agent's guess, without evidence. All later runs keep their complete output.
+
+### Tests
+
+30 tests: 12 pipeline, 8 leakage, 10 walk-forward.
+
+## Phase 4: write-up support (Oct 10)
+
+### What was done
+
+- `results/SUMMARY.md`: protocol, every number for the report, comparison with the assignment's benchmarks, interpretation, limitations, counts, and a file index.
+- `results/EXPLAIN.md`: how the modules fit together, a plain-language description of every function in `src/task3_*.py`, and 26 demo questions with answers. The four topics the group asked for are questions 20 (the forest above its expected range and how it was checked), 21 (delayed execution), 22 (market hedge) and 23 (why the Lasso barely beats reversal).
+- `notebooks/task3_agent.ipynb`: imports the modules and reproduces the final tables and figures top to bottom, with outputs saved.
+
+### Decisions
+
+| # | Decision | Reason |
+|---|---|---|
+| D40 | The notebook recomputes the pipeline checks, the harness controls, the 1990-2013 walk-forward of the four finalists, their development and test scores and both post-hoc analyses, and asserts that each equals the saved file. The 62 development rows of Phase 2 are loaded from the log, not rerun. | Rerunning Phase 2 takes about two hours. The notebook says at the top what is recomputed and what is loaded. |
+| D41 | The notebook's test-period cell repeats the frozen evaluation with recomputed predictions. It writes nothing to the experiment log. | It is a reproduction of the same numbers (all six match to three decimals), not a new evaluation and not a new configuration. |
+| D42 | Three small refactors so the notebook can call the same code as the scripts: `compute_predictions()` split out of `stage_predict()` in `task3_phase3.py`; `hedge_stats()` split out of `stage_hedge()` in `task3_posthoc.py`; `save()` in the report modules no longer closes the figure (the `run_report()` functions close all figures at the end). | So that a notebook can display the figures and reuse the walk-forward without scoring or logging. `hedge_stats()` was checked to reproduce the saved post-hoc table exactly. The five full test runs were made after these changes. |
+| D43 | The notebook was executed with a small script that drives a Jupyter kernel through `jupyter_client` (already installed as a dependency of `ipykernel`). | `nbclient` and `nbconvert` are not installed and were not on the list of packages the group allowed. |
+
+### Reproduction results from the notebook
+
+Run on Oct 10, 12:06 to 12:31; the walk-forward cell took 1,386 seconds. No cell raised an error and every assertion passed.
+
+| Table | Recomputed in the notebook | Saved value | Match |
+|---|---|---|---|
+| Development Sharpe of the 4 finalists and 2 baselines | 4.064, 5.784, 5.394, 2.531, 2.176, 0.520 | same | yes |
+| Test Sharpe | 1.067, 3.650, 3.009, 1.399, 0.725, 0.786 | same | yes |
+| Test Sharpe, one day late | 0.724, 1.236, 1.024, 0.931, 0.694, 0.821 | same | yes |
+| Test Sharpe, market hedged | 0.699, 3.499, 2.805, 1.044, 0.562, 0.659 | same | yes |
+
+This is the third independent computation of the finalists' predictions (Phase 3, the truncation checks, the notebook), all with identical results.
+
+### Problem 8: the notebook was edited by someone else while it was being produced
+
+`notebooks/task3_agent.ipynb` was created by the agent at 11:55 and executed from 12:06. When the executed file was inspected it contained four code cells the agent did not write, placed right after the setup cell (they load `results/phase2_results.csv` into `results` and print market correlations), and the kernel name in the metadata had changed to `ecgfm`. They were added in the editor between 11:55 and 12:06, were executed together with the rest, and are still in the file with their outputs. The agent did not remove or change them.
+
+Two consequences:
+
+1. The runner read the file at 12:06 and wrote it back at 12:31. Any edit made to the notebook in the editor during those 25 minutes is not in the file on disk.
+2. One of the four cells prints "Market Correlation (2011-2013)" for each model family, but it reads `phase2_results.csv`, which holds DEVELOPMENT-period correlations (1990-2010), averaged over every configuration of the family (for example 0.20 for all 28 Lasso rows). The test-period correlations of the finalists are 0.382 (Lasso), 0.394 (forest), 0.309 (MLP) and 0.401 (smoothed MLP), in `results/test_results.csv` and `results/posthoc_test_hedge.csv`. Status: reported to the group; the cells are theirs to keep, fix or delete.
+
+### Final checks
+
+| Check | Result |
+|---|---|
+| Frozen harness: `git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py` | empty |
+| Frozen finalists: `git diff $(cat results/FINALISTS_COMMIT.txt) -- results/final_configs.json` | empty |
+| Rows in the experiment log | 84: 4 Phase 0 harness checks, 62 development rows, 18 Phase 3 rows (6 test evaluations, 12 post-hoc) |
+| Log integrity | ids E001 to E084, consecutive, no row marked FAILED |
+| Development configurations before the freeze | 62 rows, of which 55 eligible and 7 controls or diagnostics |
+| Tests | 30 (12 pipeline, 8 leakage, 10 walk-forward). Five full runs on Oct 10, all 30 passed each time, complete output in `results/test_runs/`. No file in `src/` or `tests/` was modified after those runs started. |
+| Module sizes | 18 modules, 2,122 lines in total, the largest 234 lines |
+| Figures | 13 PDF files in `results/figures/` |
+
+### Open items for the group
+
+1. Problem 7: one unexplained, unreproduced failure of a leakage test on Oct 9.
+2. Problem 8: the four cells added to the notebook, one of them mislabelled.
+3. The random forest's test Sharpe is above the range written before the test (Phase 3). No bug was found.
+4. The headline test results of the forest and the MLP depend on same-close execution: a day late they keep one third.
+5. `report/task3_report_sections.tex` was never edited by the agent. Numbers there should be checked against `results/SUMMARY.md`. The share of vol-adjusted returns above 5 already reads 0.20% there.

@@ -30,7 +30,9 @@ def toy():
     feats = {"f1": vadj_c.astype("float32"),
              "f2": vadj_c.rolling(5).mean().fillna(0.0).astype("float32")}    # days t-4..t
     panel = build_panel(feats, ["f1", "f2"], make_target(vadj_c, mem), mem, days[0], days[-1])
-    return {"days": days, "vadj_c": vadj_c, "mem": mem, "panel": panel}
+    toy = {"days": days, "vadj_c": vadj_c, "mem": mem, "panel": panel}
+    toy["bytes_at_start"] = (panel["X"].tobytes(), panel["y"].tobytes(), vadj_c.values.tobytes())
+    return toy
 
 
 def test_target_is_next_day_return_demeaned(toy):
@@ -89,6 +91,13 @@ def test_smoothing_looks_backwards_only(toy):
     cut = toy["days"][200]
     pd.testing.assert_series_equal(smoothed.loc[cut], smooth_predictions(P.loc[:cut], 5).loc[cut])
     assert smooth_predictions(P, 0) is P                                 # half-life 0 = unchanged
+
+
+def test_shared_toy_data_is_not_modified_by_the_tests(toy):
+    """Guard against hidden state: the tests above must leave the shared toy panel unchanged."""
+    panel = toy["panel"]
+    now = (panel["X"].tobytes(), panel["y"].tobytes(), toy["vadj_c"].values.tobytes())
+    assert now == toy["bytes_at_start"]
 
 
 def test_logged_refits_never_train_on_or_after_the_refit_date():

@@ -155,6 +155,7 @@ def run_report():
     fig_sharpe_by_window(test)
     fig_sharpe_vs_holding(test)
     fig_model_internals()
+    plt.close("all")
 
 
 if __name__ == "__main__":
