@@ -549,3 +549,58 @@ Written by `src/task3_finalists.py`. Contents: the two periods, the walk-forward
 | `mlp_slow` | E054 | MLP, 32 units, alpha 1e-4, epochs chosen in 1..30 (network of E033) | 3 years | 252 days | half-life 5 |
 
 Nothing has been run on the test period. Phase 3 starts only after the group sends the hash of the commit that contains this file.
+
+## Slow finalist changed before the freeze (Oct 9)
+
+The Phase 2 commit made by the group is `ecf4534`.
+
+### Instruction received
+
+Replace `mlp_slow` with the predictions of E059 smoothed at half-life 5, computed from the cached development predictions. The choice is fixed regardless of its development Sharpe. Log the run and its expected test range by the same method as the others, update `final_configs.json`, and give the files for the freeze commit. In the Phase 3 output, also include the full development window Sharpes and holding periods for E058, E059 and the new slow variant.
+
+### What was done
+
+| # | Change | Reason |
+|---|---|---|
+| C13 | New stage `slow` in `task3_phase2b.py`. It smooths the cached development predictions of E059 with a half-life of 5 days and scores them with daily demeaning. Logged as row E066. | Group decision. This closes the open choice reported at the previous checkpoint: the slow finalist is now built on the MLP finalist itself, so Phase 3 no longer needs the 30-epoch network E033. |
+| C14 | `task3_finalists.py` and `results/final_configs.json`: `mlp_slow` now points to E066 (network of E059, epochs chosen in 1..60, smoothing half-life 5). | Same. |
+
+The earlier slow candidate E054 (E033 smoothed) is no longer a finalist. Its rows E054 and E064 stay in the log.
+
+### Row E066: MLP E059 with predictions smoothed, half-life 5
+
+| Sharpe 1990-2010 | 1990-94 | 1995-99 | 2000-04 | 2005-10 | Holding period (days) | Mean IC | Min predictions per day |
+|---|---|---|---|---|---|---|---|
+| 2.53 | 4.02 | 3.46 | 1.71 | 1.43 | 5.56 | 0.019 | 493 |
+
+For comparison, the candidate it replaces (E054): 2.45, with 3.67, 3.35, 1.66, 1.46 by window and a holding period of 5.73 days. The two are equivalent within noise; the choice was fixed before this number was computed. No delayed-execution diagnostic was run for E066, because it was not asked for.
+
+### Expected test-period Sharpe for the new slow finalist (same method)
+
+| Finalist | Sharpe 2005-2010 | Central expectation (decay continues .. no decay) | Expected range (central +/- 1 standard error) |
+|---|---|---|---|
+| MLP slow E066 | 1.43 | 0.93 to 1.43 | 0.35 to 2.0 |
+
+This replaces the "MLP slow E054" line of the earlier table. The other lines, and the disclosure about the reversal baseline, are unchanged.
+
+### Final frozen configuration
+
+| Finalist | From row | Model | Window | Refit | Smoothing | Dev Sharpe | Dev 2005-10 | Holding (days) |
+|---|---|---|---|---|---|---|---|---|
+| `lasso` | E012 | Lasso, alpha 1.697e-4 | 3 years | 63 days | none | 4.06 | 1.81 | 1.39 |
+| `rf` | E058 | Random forest, depth 12, leaf 200, 100 trees, 200,000 rows per fit | 3 years | 252 days | none | 5.78 | 2.70 | 1.09 |
+| `mlp` | E059 | MLP, 32 units, alpha 1e-4, epochs chosen in 1..60 | 3 years | 252 days | none | 5.39 | 2.69 | 1.27 |
+| `mlp_slow` | E066 | the predictions of `mlp`, smoothed | 3 years | 252 days | half-life 5 | 2.53 | 1.43 | 5.56 |
+
+66 rows are in the experiment log at the freeze: 4 Phase 0 checks and 62 Phase 2 rows. Nothing has been run on the test period.
+
+### To do in Phase 3 (requested)
+
+The Phase 3 output must include the development Sharpe by window and the holding period for E058, E059 and E066 next to the test results.
+
+### Frozen-harness diff before the freeze
+
+```
+$ git diff $(cat results/FROZEN_COMMIT.txt) -- src/task3_data.py src/task3_eval.py
+(empty)
+```

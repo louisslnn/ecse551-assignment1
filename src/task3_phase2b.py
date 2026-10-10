@@ -4,7 +4,7 @@ The choices at the top of this file were made from development-period
 results only (1990-2010) and are explained in results/AGENT_LOG.md.
 
 Run from the repository root, one stage at a time:
-    python src/task3_phase2b.py rf | mlp | variants | sentiment | post | extension | delay
+    python src/task3_phase2b.py rf | mlp | variants | sentiment | post | extension | delay | slow
 """
 import json
 import sys
@@ -30,8 +30,9 @@ SENT_ALPHAS = [5, 2]                # two alpha grid indices for the sentiment s
 BEST = {"lasso": "E012", "rf": "E029", "mlp": "E033"}     # best of each family (post-processing)
 # ---------------------------------------------------------------------------
 # Finalists after the grid extension (rule: replace only if the extension beats the finalist
-# by more than 0.22 in development Sharpe). "E033+hl5" = predictions of E033 smoothed, half-life 5.
-FINALISTS = {"lasso": "E012", "rf": "E058", "mlp": "E059", "mlp_slow": "E033+hl5"}
+# by more than 0.22 in development Sharpe). "E059+hl5" = predictions of E059 smoothed, half-life 5
+# (the slow finalist, fixed by the group whatever its development Sharpe; logged as E066).
+FINALISTS = {"lasso": "E012", "rf": "E058", "mlp": "E059", "mlp_slow": "E059+hl5"}
 RF_SUBSAMPLE = 200_000
 SENT_DEV_START = "2010-01-01"       # sentiment models are judged on 2010 only
 
@@ -213,9 +214,21 @@ def stage_delay(world):
         score_and_log(f"delay1_{name}", delayed, Y, mem, row, cache=False)
 
 
+def stage_slow(world):
+    """The slow finalist: predictions of the MLP finalist E059 smoothed with a half-life of 5 days."""
+    log = pd.read_csv(RESULTS / "experiment_log.csv", dtype=str).set_index("exp_id")
+    keep = ["model", "features", "hyperparams", "target_variant", "refit_every", "train_window"]
+    row = log.loc["E059", keep].to_dict()
+    row.update({"runtime_s": 0, "pred_smoothing_halflife": 5,
+                "notes": "post-processing of E059: predictions smoothed over time; slow finalist "
+                         "fixed by the group regardless of its development Sharpe"})
+    P = smooth_predictions(load_cached("E059"), 5)           # row t uses predictions of days <= t
+    score_and_log("mlp_cap60_hl5", P, world["Y"], world["mem"], row, demean=True, cache=False)
+
+
 STAGES = {"rf": stage_rf, "mlp": stage_mlp, "variants": stage_variants,
           "sentiment": stage_sentiment, "post": stage_post,
-          "extension": stage_extension, "delay": stage_delay}
+          "extension": stage_extension, "delay": stage_delay, "slow": stage_slow}
 
 if __name__ == "__main__":
     STAGES[sys.argv[1]](load_world())
