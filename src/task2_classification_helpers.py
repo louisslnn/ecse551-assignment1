@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedKFold
 
-from MLP import MLP
+from task2_classification_mlp import MLP
 
 class Grid:
     def __init__(self, param_grid):
