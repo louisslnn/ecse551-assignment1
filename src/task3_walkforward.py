@@ -1,8 +1,7 @@
 """Task 3 walk-forward engine: stack member rows, refit on the past, predict forward.
 
-Timeline at a refit date d: the models are fitted on rows s with s <= d-1
-(whose targets, the returns of days s+1 <= d, are all known at the close of
-d), then they predict every day from d until the next refit date.
+Every fitted outcome must be realized strictly before the refit date.
+Features and predictions retain prediction dates; outcomes have explicit dates.
 """
 import time
 
@@ -10,6 +9,14 @@ import numpy as np
 import pandas as pd
 
 from task3_models import fit_config
+
+
+def realization_dates(trading_days):
+    """Map to the next observed trading day, never a calendar-day offset."""
+    days = pd.DatetimeIndex(trading_days)
+    if days.has_duplicates or not days.is_monotonic_increasing or days.hasnans:
+        raise ValueError("trading calendar must be sorted, unique and nonmissing")
+    return pd.Series(days, index=days, name="realization_date").shift(-1)
 
 
 def make_target(vadj_c, mem, demean=True):
@@ -24,14 +31,15 @@ def make_target(vadj_c, mem, demean=True):
     return target
 
 
-def build_panel(feats, names, target, mem, start, end):
+def build_panel(feats, names, target, mem, start, end, *, target_dates=None):
     """Stack the member cells of days start..end into one table (one row per stock-day).
 
     Rows are sorted by day. Returns a dict with the feature matrix X, the
     target y, and for every row its day and stock, plus row_start: the first
     row of each day (so the rows of days a..b-1 are row_start[a]:row_start[b]).
     """
-    days = mem.loc[start:end].index            # days start..end only: nothing after `end` enters the panel
+    target_dates = realization_dates(mem.index) if target_dates is None else target_dates
+    days = mem.loc[start:end].index            # map on the full calendar before slicing
     is_member = mem.loc[days].values
     row_day, row_stock = np.nonzero(is_member)               # row-major order = sorted by day
     X = np.column_stack([feats[n].loc[days].values[is_member] for n in names]).astype("float32")
@@ -39,6 +47,8 @@ def build_panel(feats, names, target, mem, start, end):
     row_start = np.searchsorted(row_day, np.arange(len(days) + 1))
     return {"X": X, "y": y, "names": list(names), "days": days, "columns": mem.columns,
             "row_day": row_day, "row_stock": row_stock, "dates": days[row_day],
+            "target_dates": pd.DatetimeIndex(target_dates.reindex(days).iloc[row_day]),
+            "day_target_dates": pd.DatetimeIndex(target_dates.reindex(days)),
             "row_start": row_start}
 
 
@@ -56,11 +66,12 @@ def permute_target_within_day(panel, seed=42):
 
 
 def training_rows(panel, k_lo, k):
-    """Rows of days k_lo..k-1 (strictly before day k) that have a target. Returns X, y, dates."""
+    """Rows of feature days [k_lo, k) with a finite target and known outcome date."""
     train = slice(panel["row_start"][k_lo], panel["row_start"][k])     # days k_lo..k-1 only
-    has_target = ~np.isnan(panel["y"][train])
+    has_target = np.isfinite(panel["y"][train]) & ~panel["target_dates"][train].isna()
     X = panel["X"][train][has_target].astype("float64")
-    return X, panel["y"][train][has_target], panel["dates"][train][has_target]
+    return (X, panel["y"][train][has_target], panel["dates"][train][has_target],
+            panel["target_dates"][train][has_target])
 
 
 def walk_forward(panel, specs, first_pred, last_pred, refit_every, train_window,
@@ -84,26 +95,29 @@ def walk_forward(panel, specs, first_pred, last_pred, refit_every, train_window,
 
     for k in range(k_first, k_last + 1, refit_every):
         d = days[k]                                           # refit date = first day predicted
-        k_lo = 0 if train_window is None else max(0, k - train_window)
-        X_tr, y_tr, dates_tr = training_rows(panel, k_lo, k)  # rows of days k_lo..k-1: strictly before d
+        eligible = np.flatnonzero((panel["day_target_dates"] < d) & (days < d))
+        if len(eligible) == 0:
+            raise ValueError(f"no eligible training outcomes before {d}")
+        k_end = int(eligible[-1]) + 1
+        k_lo = 0 if train_window is None else max(0, k_end - train_window)
+        X_tr, y_tr, dates_tr, outcomes_tr = training_rows(panel, k_lo, k_end)
+        if len(y_tr) == 0:
+            raise ValueError(f"no finite training targets before {d}")
         k_next = min(k + refit_every, k_last + 1)
         pred = slice(row_start[k], row_start[k_next])         # rows of days k..k_next-1: d until next refit
         if subsample is not None and len(y_tr) > subsample:
             pick = rng.choice(len(y_tr), size=subsample, replace=False)
-            X_tr, y_tr, dates_tr = X_tr[pick], y_tr[pick], dates_tr[pick]
-
-        # standardize with the mean and std of the TRAINING rows only
-        mu, sd = X_tr.mean(axis=0), X_tr.std(axis=0)
-        sd[sd == 0] = 1.0
-        X_tr = (X_tr - mu) / sd
-        X_pr = (panel["X"][pred] - mu) / sd
+            X_tr, y_tr, dates_tr, outcomes_tr = X_tr[pick], y_tr[pick], dates_tr[pick], outcomes_tr[pick]
+        X_pr = panel["X"][pred].astype("float64")
 
         for name, spec in specs.items():
             t0 = time.time()
-            model, info = fit_config(spec, X_tr, y_tr, dates_tr, d)    # asserts dates_tr < d
+            model, info = fit_config(spec, X_tr, y_tr, dates_tr, d, target_dates=outcomes_tr)
             P[name][panel["row_day"][pred], panel["row_stock"][pred]] = model.predict(X_pr)
             info.update({"refit_date": d.date(), "n_train": len(y_tr), "seconds": time.time() - t0,
-                         "train_first": dates_tr.min().date(), "train_last": dates_tr.max().date()})
+                         "train_first": dates_tr.min().date(), "train_last": dates_tr.max().date(),
+                         "train_target_last": outcomes_tr.max().date(),
+                         "eligible_feature_days": k_end - k_lo})
             records[name].append(info)
 
     preds = {name: pd.DataFrame(P[name], index=days, columns=panel["columns"]).iloc[k_first:k_last + 1]

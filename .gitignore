@@ -2,3 +2,7 @@ data
 __pycache__/
 .DS_Store
 results/cache/
+instructions-data/
+results/corrected_v2/cache/
+.pytest_cache/
+.task3-runtime/

@@ -13,7 +13,7 @@ sys.path.insert(0, str(REPO / "src"))
 
 from task3_data import build_targets  # noqa: E402
 
-DATA_DIR = REPO / "data"
+DATA_DIR = REPO / "instructions-data"
 REL_TOL = 1e-3
 
 

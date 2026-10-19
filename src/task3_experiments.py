@@ -1,124 +1,151 @@
-"""Task 3 experiment bookkeeping: score a prediction table and record everything.
-
-Every configuration goes through score_and_log(), which calls the frozen
-evaluate() on the development period and appends one row to the experiment
-log. Side files keep the per-window Sharpe, the daily P&L and rank IC, and
-what each model learned at each refit.
-"""
-import time
+"""Replay the fixed 62 development definitions without selecting new finalists."""
 from pathlib import Path
+import time
 
 import numpy as np
 import pandas as pd
 
-from task3_eval import evaluate, sharpe
-from task3_log import append_log
-from task3_walkforward import walk_forward
+from task3_eval import evaluate, holding_period, sharpe
+from task3_protocol import PROTOCOL_VERSION, write_json
+from task3_walkforward import (build_panel, make_target, permute_target_within_day,
+                               smooth_predictions, walk_forward)
 
-DEV_START, DEV_END = "1990-01-01", "2010-12-31"     # development period (prediction dates)
-PANEL_START = "1981-05-22"                          # first day on which all return features exist
-DEV_WINDOWS = [("1990", "1994"), ("1995", "1999"), ("2000", "2004"), ("2005", "2010")]
-RESULTS = Path("results")
-CACHE = RESULTS / "cache"                           # prediction tables, large, not committed
+DEV_WINDOWS = [('1990', '1994'), ('1995', '1999'), ('2000', '2004'), ('2005', '2010')]
 
 
-def append_csv(path, row):
-    """Append one dict as a row to a CSV file (the header is written on first use)."""
-    path = Path(path)
-    pd.DataFrame([row]).to_csv(path, mode="a", header=not path.exists(), index=False)
+def predict_entry(world, entry, last_pred):
+    """Fit a specification with the original refit calendar and an explicit boundary warmup.
 
-
-def add_column(path, name, series):
-    """Add one daily series as a new column of a wide CSV file (dates x experiments)."""
-    path = Path(path)
-    table = pd.read_csv(path, index_col=0, parse_dates=True) if path.exists() else pd.DataFrame()
-    table = table.join(series.rename(name), how="outer") if len(table.columns) else series.rename(name).to_frame()
-    table.to_csv(path, index_label="date")
-
-
-def score_and_log(name, P, Y, mem, row, start=DEV_START, end=DEV_END, demean=True, cache=True):
-    """Evaluate prediction table P on start..end, append it to the log, return its exp_id.
-
-    start and end are prediction dates and must not be after DEV_END: in
-    Phase 2 nothing is ever evaluated on the test period.
+    Two preceding prediction days cover the first outcome and delayed-execution
+    diagnostic. Scheduled refits still start on the original 1990/2010 first day.
     """
-    assert pd.Timestamp(end) <= pd.Timestamp(DEV_END), "test set lockout: evaluation after 2010"
-    P = P.loc[start:end]                                    # prediction dates start..end only
-    pnl, ic, out = evaluate(P, Y, mem, start, end, demean=demean, label=name, plot=False)
-
-    row = dict(row)
-    row.update({
-        "phase": 2, "demean": demean,
-        "dev_sharpe": out["Sharpe"],
-        "dev_sharpe_1990_1999": sharpe(pnl.loc["1990":"1999"]) if start < "2000" else "",
-        "dev_sharpe_2000_2010": sharpe(pnl.loc["2000":"2010"]),
-        "mean_ic": out["mean IC"], "ic_tstat": out["IC t-stat"],
-        "holding_period": out["holding period (days)"], "corr_market": out["corr w/ market"],
-        "min_preds_per_day": out["min preds/day"],
-    })
-    exp_id = append_log(row)
-
-    windows = {"exp_id": exp_id, "name": name, "start": start, "end": end, "dev_sharpe": out["Sharpe"]}
-    for a, b in DEV_WINDOWS:
-        in_window = pnl.loc[a:b]
-        windows[f"sharpe_{a}_{b}"] = sharpe(in_window) if len(in_window) > 1 else np.nan
-    append_csv(RESULTS / "dev_windows.csv", windows)
-    add_column(RESULTS / "dev_pnl.csv", exp_id, pnl)
-    add_column(RESULTS / "dev_ic.csv", exp_id, ic)
-    if cache:
-        CACHE.mkdir(parents=True, exist_ok=True)
-        P.astype("float32").to_pickle(CACHE / f"{exp_id}.pkl")
-    return exp_id
-
-
-def load_cached(exp_id):
-    """Load the development-period prediction table of an earlier experiment."""
-    return pd.read_pickle(CACHE / f"{exp_id}.pkl")
+    mem, dates = world['mem'], world['dates']
+    names = world['return_names'] if entry['feature_set'] == 'return_18' else world['sent_names']
+    if entry['feature_set'] == 'return_18+sentiment_13':
+        names = world['return_names'] + world['sent_names']
+    feats = {n: world['features'][n] for n in names}
+    if entry['target_variant'] == 'leaky':
+        feats = {n: t.shift(-1).fillna(0) for n, t in feats.items()}  # deliberately invalid control
+    target = make_target(world['vadj_c'], mem, demean=entry['target_variant'] != 'raw')
+    panel = build_panel(feats, names, target, mem, entry['panel_start'], last_pred,
+                        target_dates=dates)
+    if entry['target_variant'] == 'permuted':
+        permute_target_within_day(panel, seed=42)  # same seeded within-day negative control
+    calendar = panel['days']
+    k_first = calendar.searchsorted(pd.Timestamp(entry['first_refit']))
+    if k_first < 2:
+        raise ValueError('panel needs history before its first scheduled refit')
+    warm_first, warm_last = calendar[k_first - 2], calendar[k_first - 1]
+    args = (panel, {'model': entry['spec']})
+    options = dict(refit_every=entry['refit_every'], train_window=entry['train_window'],
+                   subsample=entry['subsample'], seed=42)
+    warm, warm_records = walk_forward(*args, warm_first, warm_last, **options)
+    pred, records = walk_forward(*args, entry['first_refit'], last_pred, **options)
+    # The warmup has its own RNG; the main schedule's seeded draws remain unchanged.
+    for rec in warm_records['model']:
+        rec['boundary_warmup'] = True
+    for rec in records['model']:
+        rec['boundary_warmup'] = False
+    return pd.concat([warm['model'], pred['model']]), warm_records['model'] + records['model'], names
 
 
-def save_records(exp_id, name, records, feature_names):
-    """Save what a model learned at each refit (coefficients, importances or epochs)."""
-    for rec in records:
-        base = {"exp_id": exp_id, "name": name, "refit_date": rec["refit_date"],
-                "n_train": rec["n_train"], "train_first": rec["train_first"],
-                "train_last": rec["train_last"]}
-        if "coef" in rec:
-            base.update(dict(zip(feature_names, rec["coef"])))
-            append_csv(RESULTS / f"lasso_coefs_{len(feature_names)}.csv", base)
-        elif "importances" in rec:
-            base.update(dict(zip(feature_names, rec["importances"])))
-            append_csv(RESULTS / f"rf_importances_{len(feature_names)}.csv", base)
-        elif "epochs" in rec:
-            base.update({"epochs": rec["epochs"], "holdout_mse_first": rec["holdout_mse"][0],
-                         "holdout_mse_best": min(rec["holdout_mse"]),
-                         "holdout_mse_last": rec["holdout_mse"][-1]})
-            append_csv(RESULTS / "mlp_epochs.csv", base)
+def baseline_predictions(world, rule):
+    v = world['vadj_c']
+    if rule == 'rev_5':
+        return -v.rolling(5, min_periods=3).mean()  # days t-4..t
+    if rule == 'mom_12_1':
+        return v.rolling(231, min_periods=231).sum().shift(21)  # days t-251..t-21
+    raise ValueError(f'unknown baseline {rule}')
 
 
-def run_group(panel, specs, rows, Y, mem, refit_every, train_window,
-              start=DEV_START, end=DEV_END, subsample=None):
-    """Walk forward for a group of specs that share training data, then score and log each.
+def score_predictions(world, P, period, *, name, demean=True, min_predictions=100):
+    return evaluate(P, world['Y'], world['mem'], *period, demean=demean, label=name,
+                    plot=False, target_dates=world['dates'], raw_returns=world['ret'],
+                    min_predictions=min_predictions)
 
-    rows: dict name -> the descriptive log columns of that configuration.
-    If the walk-forward crashes, every configuration of the group is still
-    logged, marked FAILED, so that no attempt disappears from the record.
-    Returns dict name -> exp_id.
-    """
-    t0 = time.time()
-    try:
-        preds, records = walk_forward(panel, specs, start, end, refit_every, train_window, subsample)
-    except Exception as error:
-        for name in specs:
-            failed = dict(rows[name])
-            failed.update({"phase": 2, "runtime_s": round(time.time() - t0, 1),
-                           "notes": f"FAILED: {type(error).__name__}: {error} | " + failed.get("notes", "")})
-            append_log(failed)
-        raise
-    exp_ids = {}
-    for name in specs:
-        row = dict(rows[name])
-        row["runtime_s"] = round(sum(rec["seconds"] for rec in records[name]), 1)
-        exp_ids[name] = score_and_log(name, preds[name], Y, mem, row, start, end)
-        save_records(exp_ids[name], name, records[name], panel["names"])
-        print(f"   -> logged {name} as {exp_ids[name]}", flush=True)
-    return exp_ids
+
+def holding_details(world, P, period, demean):
+    """Same observations as evaluation, retaining all trading rows in the period."""
+    p = P.reindex_like(world['mem']).where(world['mem'])
+    p = p.where(np.isfinite(p))
+    if demean:
+        p = p.sub(p.mean(axis=1), axis=0)
+    keep = world['dates'].between(pd.Timestamp(period[0]), pd.Timestamp(period[1]))
+    p = p.where(np.isfinite(world['Y'])).loc[keep]
+    return holding_period(p)[0]
+
+
+def metric_row(name, pnl, ic, metrics):
+    row = {'name': name, 'days': len(pnl), **metrics}
+    for a, b in DEV_WINDOWS + [('2011', '2011'), ('2012', '2012'), ('2013', '2013')]:
+        # All window slices below are realization dates, including year boundaries.
+        row[f'sharpe_{a}_{b}'] = sharpe(pnl.loc[a:b])
+    return row
+
+
+class ExperimentRunner:
+    """One explicit dependency graph; source IDs never depend on log row order."""
+
+    def __init__(self, world, entries, output_dir, min_predictions=100):
+        self.world = world
+        self.entries = {e['source_exp_id']: e for e in entries}
+        if len(self.entries) != len(entries):
+            raise ValueError('duplicate source experiment identifiers')
+        self.out = Path(output_dir)
+        self.minimum = min_predictions
+        self.completed, self.visiting = {}, set()
+
+    def prediction_path(self, eid):
+        return self.out / 'cache' / f'{eid}.pkl'
+
+    def run_one(self, eid):
+        if eid in self.completed:
+            return pd.read_pickle(self.prediction_path(eid))
+        if eid in self.visiting:
+            raise ValueError(f'cyclic experiment dependency at {eid}')
+        self.visiting.add(eid)
+        entry, w = self.entries[eid], self.world
+        print(f"{PROTOCOL_VERSION}: {eid} {entry['name']}", flush=True)
+        started, records, names = time.time(), [], []
+        try:
+            if entry['kind'] == 'baseline':
+                P = baseline_predictions(w, entry['rule'])
+            elif entry['kind'] == 'transform':
+                P = self.run_one(entry['source'])
+                if entry.get('halflife'):
+                    P = smooth_predictions(P, entry['halflife'])  # full prediction history, through t
+                if entry.get('delay'):
+                    P = P.reindex(w['mem'].index).shift(entry['delay'])  # next actual trading day
+            elif entry['kind'] == 'fit':
+                end = pd.Timestamp(entry['period'][1])
+                pred_days = w['dates'].index[w['dates'].notna() & (w['dates'] <= end)]
+                P, records, names = predict_entry(w, entry, pred_days[-1])
+            else:
+                raise ValueError(f"unknown experiment kind {entry['kind']}")
+            pnl, ic, metrics = score_predictions(w, P, entry['period'], name=entry['name'],
+                                                 demean=entry['demean'], min_predictions=self.minimum)
+            row = metric_row(entry['name'], pnl, ic, metrics)
+            row.update(source_exp_id=eid, protocol_version=PROTOCOL_VERSION,
+                       runtime_s=time.time() - started, status='complete')
+            self.prediction_path(eid).parent.mkdir(parents=True, exist_ok=True)
+            P.astype('float32').to_pickle(self.prediction_path(eid))
+            pnl.to_csv(self.out / f'{eid}_pnl.csv')
+            ic.to_csv(self.out / f'{eid}_ic.csv')
+            holding_details(w, P, entry['period'], entry['demean']).to_csv(self.out / f'{eid}_holding.csv')
+            write_json(self.out / f'{eid}_refits.json', {'features': names, 'refits': records})
+            self.completed[eid] = row
+            pd.DataFrame(list(self.completed.values())).sort_values('source_exp_id').to_csv(
+                self.out / 'experiment_results.csv', index=False)
+            return P
+        except Exception as error:
+            failure = {'source_exp_id': eid, 'status': 'failed', 'error': repr(error),
+                       'runtime_s': time.time() - started}
+            write_json(self.out / f'{eid}_failure.json', failure)
+            raise
+        finally:
+            self.visiting.discard(eid)
+
+    def run_all(self):
+        for eid in self.entries:
+            self.run_one(eid)
+        return pd.DataFrame(list(self.completed.values())).sort_values('source_exp_id')
