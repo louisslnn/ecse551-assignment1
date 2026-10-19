@@ -34,6 +34,12 @@ python3 scripts/execute_task3_notebook.py --data-dir instructions-data
 
 This preserves the executed notebook and copies corrected outputs back into `results/corrected_v2/`. Temporary execution directories are ignored under `.task3-runtime/`.
 
+Git retains the executed notebook, summary tables, figures, configuration copies, run manifest, and validation evidence. Detailed daily series, per-stock holding diagnostics, refit records, prediction-date mappings, volatility diagnostics, and caches are generated locally and ignored to keep the PR reviewable. Existing local outputs are preserved. A fresh checkout must run the notebook or the full pipeline above before rerunning the saved-output audit:
+
+```sh
+python3 scripts/validate_task3_outputs.py
+```
+
 Alternatively, run the identical maintained implementation directly:
 
 ```sh
