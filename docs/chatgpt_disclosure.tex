@@ -1,0 +1,32 @@
+% Add alongside the existing disclosure of other AI assistance.
+\paragraph{Additional use of ChatGPT for Task 3.}
+I used ChatGPT (OpenAI), through the Codex interface, to review Task~3
+against the assignment instructions. The context included the assignment
+PDF and the repository's source code, notebooks, experiment log, frozen
+configurations, draft report, and saved results. My initial prompt asked
+whether Task~3 was implemented correctly and what needed to be added or
+replaced. ChatGPT inspected the implementation, ran targeted checks,
+and checked reported summary statistics against saved daily outputs.
+I then requested a plan and explicitly authorized its implementation,
+covering notebook reproducibility, development/test boundaries, market
+benchmarking, holding-period estimation, and training-data timing.
+During planning, I chose the stricter rule that training outcomes must
+be observed before the prediction day and asked that the report remain
+unchanged until all assignment tasks were complete.
+
+ChatGPT generated and edited implementation code and automated tests,
+created a fixed replay of the existing experiments and a standalone
+notebook, and drafted this disclosure. Validation included synthetic
+edge cases, real-data feature tests, and a raw-data truncation check of
+past predictions. The standalone notebook was then fully executed with
+the supplied CSVs, and its saved metrics were independently checked
+against the daily output series and refit records. The original review
+lacked the raw CSVs; these were
+supplied later for the corrected execution. The prompts, context,
+experiment history, and execution status are documented in the notebook
+and accompanying records. The corrections were made after the original
+test results had been observed; the existing finalist identities and
+hyperparameters were retained, rather than selecting new finalists.
+This paragraph supplements the separate disclosure of other AI tools.
+The group remains responsible for reviewing, understanding, and defending
+the final implementation and results.

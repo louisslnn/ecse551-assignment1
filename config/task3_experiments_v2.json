@@ -1,0 +1,1274 @@
+[
+  {
+    "source_exp_id": "E005",
+    "name": "baseline_rev_5",
+    "kind": "baseline",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "rule": "rev_5"
+  },
+  {
+    "source_exp_id": "E006",
+    "name": "baseline_mom_12_1",
+    "kind": "baseline",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "rule": "mom_12_1"
+  },
+  {
+    "source_exp_id": "E007",
+    "name": "lasso_3y_a0",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.01657268816836561
+    }
+  },
+  {
+    "source_exp_id": "E008",
+    "name": "lasso_3y_a1",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.006629075267346245
+    }
+  },
+  {
+    "source_exp_id": "E009",
+    "name": "lasso_3y_a2",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0026516301069384983
+    }
+  },
+  {
+    "source_exp_id": "E010",
+    "name": "lasso_3y_a3",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0010606520427753994
+    }
+  },
+  {
+    "source_exp_id": "E011",
+    "name": "lasso_3y_a4",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.00042426081711015973
+    }
+  },
+  {
+    "source_exp_id": "E012",
+    "name": "lasso_3y_a5",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0001697043268440639
+    }
+  },
+  {
+    "source_exp_id": "E013",
+    "name": "lasso_5y_a0",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 1260,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.01657268816836561
+    }
+  },
+  {
+    "source_exp_id": "E014",
+    "name": "lasso_5y_a1",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 1260,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.006629075267346245
+    }
+  },
+  {
+    "source_exp_id": "E015",
+    "name": "lasso_5y_a2",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 1260,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0026516301069384983
+    }
+  },
+  {
+    "source_exp_id": "E016",
+    "name": "lasso_5y_a3",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 1260,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0010606520427753994
+    }
+  },
+  {
+    "source_exp_id": "E017",
+    "name": "lasso_5y_a4",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 1260,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.00042426081711015973
+    }
+  },
+  {
+    "source_exp_id": "E018",
+    "name": "lasso_5y_a5",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 1260,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0001697043268440639
+    }
+  },
+  {
+    "source_exp_id": "E019",
+    "name": "lasso_expanding_a0",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.01657268816836561
+    }
+  },
+  {
+    "source_exp_id": "E020",
+    "name": "lasso_expanding_a1",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.006629075267346245
+    }
+  },
+  {
+    "source_exp_id": "E021",
+    "name": "lasso_expanding_a2",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0026516301069384983
+    }
+  },
+  {
+    "source_exp_id": "E022",
+    "name": "lasso_expanding_a3",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0010606520427753994
+    }
+  },
+  {
+    "source_exp_id": "E023",
+    "name": "lasso_expanding_a4",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.00042426081711015973
+    }
+  },
+  {
+    "source_exp_id": "E024",
+    "name": "lasso_expanding_a5",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0001697043268440639
+    }
+  },
+  {
+    "source_exp_id": "E025",
+    "name": "rf_3y_d4_l200",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": 200000,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "rf",
+      "max_depth": 4,
+      "min_samples_leaf": 200
+    }
+  },
+  {
+    "source_exp_id": "E026",
+    "name": "rf_3y_d4_l1000",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": 200000,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "rf",
+      "max_depth": 4,
+      "min_samples_leaf": 1000
+    }
+  },
+  {
+    "source_exp_id": "E027",
+    "name": "rf_3y_d6_l200",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": 200000,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "rf",
+      "max_depth": 6,
+      "min_samples_leaf": 200
+    }
+  },
+  {
+    "source_exp_id": "E028",
+    "name": "rf_3y_d6_l1000",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": 200000,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "rf",
+      "max_depth": 6,
+      "min_samples_leaf": 1000
+    }
+  },
+  {
+    "source_exp_id": "E029",
+    "name": "rf_3y_d8_l200",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": 200000,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "rf",
+      "max_depth": 8,
+      "min_samples_leaf": 200
+    }
+  },
+  {
+    "source_exp_id": "E030",
+    "name": "rf_3y_d8_l1000",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": 200000,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "rf",
+      "max_depth": 8,
+      "min_samples_leaf": 1000
+    }
+  },
+  {
+    "source_exp_id": "E031",
+    "name": "mlp_3y_h16_a0.0001",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "mlp",
+      "hidden": 16,
+      "alpha": 0.0001
+    }
+  },
+  {
+    "source_exp_id": "E032",
+    "name": "mlp_3y_h16_a0.01",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "mlp",
+      "hidden": 16,
+      "alpha": 0.01
+    }
+  },
+  {
+    "source_exp_id": "E033",
+    "name": "mlp_3y_h32_a0.0001",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "mlp",
+      "hidden": 32,
+      "alpha": 0.0001
+    }
+  },
+  {
+    "source_exp_id": "E034",
+    "name": "mlp_3y_h32_a0.01",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "mlp",
+      "hidden": 32,
+      "alpha": 0.01
+    }
+  },
+  {
+    "source_exp_id": "E035",
+    "name": "lasso_raw_target",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "raw",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0001697043268440639
+    }
+  },
+  {
+    "source_exp_id": "E036",
+    "name": "control_negative_permuted_target",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "permuted",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0001697043268440639
+    }
+  },
+  {
+    "source_exp_id": "E037",
+    "name": "control_positive_leaky_features",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "leaky",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0001697043268440639
+    }
+  },
+  {
+    "source_exp_id": "E038",
+    "name": "sent_lasso_return_18_a5",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "2009-07-13",
+    "first_refit": "2010-01-01",
+    "period": [
+      "2010-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0001697043268440639
+    }
+  },
+  {
+    "source_exp_id": "E039",
+    "name": "sent_lasso_return_18+sentiment_13_a5",
+    "kind": "fit",
+    "feature_set": "return_18+sentiment_13",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "2009-07-13",
+    "first_refit": "2010-01-01",
+    "period": [
+      "2010-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0001697043268440639
+    }
+  },
+  {
+    "source_exp_id": "E040",
+    "name": "sent_lasso_return_18_a2",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "2009-07-13",
+    "first_refit": "2010-01-01",
+    "period": [
+      "2010-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0026516301069384983
+    }
+  },
+  {
+    "source_exp_id": "E041",
+    "name": "sent_lasso_return_18+sentiment_13_a2",
+    "kind": "fit",
+    "feature_set": "return_18+sentiment_13",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "2009-07-13",
+    "first_refit": "2010-01-01",
+    "period": [
+      "2010-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0026516301069384983
+    }
+  },
+  {
+    "source_exp_id": "E042",
+    "name": "sent_lasso_sentiment_13_a5",
+    "kind": "fit",
+    "feature_set": "sentiment_13",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "2009-07-13",
+    "first_refit": "2010-01-01",
+    "period": [
+      "2010-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "lasso",
+      "alpha": 0.0001697043268440639
+    }
+  },
+  {
+    "source_exp_id": "E043",
+    "name": "sent_rf_return_18+sentiment_13",
+    "kind": "fit",
+    "feature_set": "return_18+sentiment_13",
+    "target_variant": "demeaned",
+    "train_window": null,
+    "refit_every": 252,
+    "subsample": 200000,
+    "panel_start": "2009-07-13",
+    "first_refit": "2010-01-01",
+    "period": [
+      "2010-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "rf",
+      "max_depth": 4,
+      "min_samples_leaf": 1000
+    }
+  },
+  {
+    "source_exp_id": "E044",
+    "name": "lasso_nodemean",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": false,
+    "source": "E012"
+  },
+  {
+    "source_exp_id": "E045",
+    "name": "lasso_hl2",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E012",
+    "halflife": 2
+  },
+  {
+    "source_exp_id": "E046",
+    "name": "lasso_hl5",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E012",
+    "halflife": 5
+  },
+  {
+    "source_exp_id": "E047",
+    "name": "lasso_hl10",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E012",
+    "halflife": 10
+  },
+  {
+    "source_exp_id": "E048",
+    "name": "rf_nodemean",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": false,
+    "source": "E029"
+  },
+  {
+    "source_exp_id": "E049",
+    "name": "rf_hl2",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E029",
+    "halflife": 2
+  },
+  {
+    "source_exp_id": "E050",
+    "name": "rf_hl5",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E029",
+    "halflife": 5
+  },
+  {
+    "source_exp_id": "E051",
+    "name": "rf_hl10",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E029",
+    "halflife": 10
+  },
+  {
+    "source_exp_id": "E052",
+    "name": "mlp_nodemean",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": false,
+    "source": "E033"
+  },
+  {
+    "source_exp_id": "E053",
+    "name": "mlp_hl2",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E033",
+    "halflife": 2
+  },
+  {
+    "source_exp_id": "E054",
+    "name": "mlp_hl5",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E033",
+    "halflife": 5
+  },
+  {
+    "source_exp_id": "E055",
+    "name": "mlp_hl10",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E033",
+    "halflife": 10
+  },
+  {
+    "source_exp_id": "E056",
+    "name": "ext_lasso_3y_ols",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "ols"
+    }
+  },
+  {
+    "source_exp_id": "E057",
+    "name": "ext_rf_3y_d10_l200",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": 200000,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "rf",
+      "max_depth": 10,
+      "min_samples_leaf": 200
+    }
+  },
+  {
+    "source_exp_id": "E058",
+    "name": "ext_rf_3y_d12_l200",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": 200000,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "rf",
+      "max_depth": 12,
+      "min_samples_leaf": 200
+    }
+  },
+  {
+    "source_exp_id": "E059",
+    "name": "ext_mlp_3y_h32_cap60",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "mlp",
+      "hidden": 32,
+      "alpha": 0.0001,
+      "max_epochs": 60
+    }
+  },
+  {
+    "source_exp_id": "E060",
+    "name": "ext_mlp_3y_h64",
+    "kind": "fit",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 252,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "spec": {
+      "model": "mlp",
+      "hidden": 64,
+      "alpha": 0.0001
+    }
+  },
+  {
+    "source_exp_id": "E061",
+    "name": "delay1_lasso",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E012",
+    "delay": 1
+  },
+  {
+    "source_exp_id": "E062",
+    "name": "delay1_rf",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E058",
+    "delay": 1
+  },
+  {
+    "source_exp_id": "E063",
+    "name": "delay1_mlp",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E059",
+    "delay": 1
+  },
+  {
+    "source_exp_id": "E064",
+    "name": "delay1_mlp_slow",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E066",
+    "delay": 1
+  },
+  {
+    "source_exp_id": "E065",
+    "name": "delay1_baseline_rev_5",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E005",
+    "delay": 1
+  },
+  {
+    "source_exp_id": "E066",
+    "name": "mlp_cap60_hl5",
+    "kind": "transform",
+    "feature_set": "return_18",
+    "target_variant": "demeaned",
+    "train_window": 756,
+    "refit_every": 63,
+    "subsample": null,
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "demean": true,
+    "source": "E059",
+    "halflife": 5
+  }
+]

@@ -1,0 +1,146 @@
+{
+  "protocol_version": "corrected_v2",
+  "created_utc": "2026-10-19T02:16:26.704255+00:00",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "platform": "macOS-15.6.1-arm64-arm-64bit",
+  "packages": {
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "scipy": "1.15.3",
+    "scikit-learn": "1.5.2",
+    "matplotlib": "3.10.0"
+  },
+  "data_sha256": {
+    "eq_returns.csv": "53153c2324f98e6527b3eb3ea694697a1673eff682ed44f12b7c9a5423558479",
+    "eq_indicator.csv": "eb1fa83b5e0b7ae7ff88cd8062763ae40f17203db32a2761bfb612543ad8d9e6",
+    "eq_stock_metadata.csv": "e19550d169df95848a49db8e617374d30db55036f001aeeeb544f8d433e58cf0",
+    "psych_bullish.csv": "973681e7876520c178648adcce1591f610941a7fa309a5688f4e9c71104ca16f",
+    "psych_bearish.csv": "26c98820dfc43375eca2062786a11e59ae935081dead3f8b4b96a358cfedab49"
+  },
+  "source_sha256": {
+    "src/task3_protocol.py": "fce2476aafac0024e183ce15f644c96cbb85e56573f388b5f98e350f439b2ab0",
+    "src/task3_data.py": "0228145c1c158f8de556abd56018e6631b5c283ebfbcb905ad012cfddbd42755",
+    "src/task3_features.py": "f8ef7dc2c902d56a6f16d59802d18d0d17163563e7822e3c854a5d2decbae9f0",
+    "src/task3_train.py": "a6bd0154474b00c6d65753cbb43ee97ef0648e20bd178cac84d62ea697205e7d",
+    "src/task3_models.py": "6b1675718483db10907bd20662d21cbffa99d60ec498edbb2d1aea556879a1c9",
+    "src/task3_walkforward.py": "829f7f3c19782ce6ad1d54efd39b08957dc4fe5dce9738c9258735f8bd86e88d",
+    "src/task3_eval.py": "06d9f3595c9465df51d918882f6d5219b9eb55b59a07a6f94b7bdf0823a49404",
+    "src/task3_experiments.py": "625a8bd7d73a902d9015062cf3d8a40137626eee73356a8c3dc2ac786e2f31f9",
+    "src/task3_runtime.py": "71a8dc958b34d8beb3eb5dc84dd7a17a2fe1516cee8553d2b44db82a5097caa6",
+    "src/task3_posthoc.py": "d6433c4acd5393bd202242209890c66a3bd0930aa18f611d1dd175eb39b28305",
+    "src/task3_corrected.py": "9d95a107c638d8c24349ef6e2cbbc8d344b3399750bf6db755d25df300c14fe3",
+    "src/task3_figures.py": "fa762b9dd39b7f6111adec1b6f0065eaf1144f1c6869350757b4f244b14cfeb9"
+  },
+  "configuration": {
+    "development_period": [
+      "1990-01-01",
+      "2010-12-31"
+    ],
+    "test_period": [
+      "2011-01-01",
+      "2013-12-31"
+    ],
+    "features": [
+      "rev_1",
+      "rev_1_hl5",
+      "rev_1_hl10",
+      "rev_5",
+      "rev_5_hl5",
+      "rev_5_hl10",
+      "rev_21",
+      "rev_21_hl5",
+      "rev_21_hl10",
+      "mom_12_1",
+      "vol_level",
+      "rev_5_sec",
+      "rev_5_sec_hl5",
+      "rev_5_sec_hl10",
+      "rev_21_sec",
+      "rev_21_sec_hl5",
+      "rev_21_sec_hl10",
+      "mom_12_1_sec"
+    ],
+    "finalists": [
+      {
+        "name": "lasso",
+        "source_exp_id": "E012",
+        "spec": {
+          "model": "lasso",
+          "alpha": 0.0001697043268440639
+        },
+        "refit_every": 63,
+        "train_window_days": 756,
+        "subsample": null,
+        "pred_smoothing_halflife": 0
+      },
+      {
+        "name": "rf",
+        "source_exp_id": "E058",
+        "spec": {
+          "model": "rf",
+          "max_depth": 12,
+          "min_samples_leaf": 200
+        },
+        "refit_every": 252,
+        "train_window_days": 756,
+        "subsample": 200000,
+        "pred_smoothing_halflife": 0
+      },
+      {
+        "name": "mlp",
+        "source_exp_id": "E059",
+        "spec": {
+          "model": "mlp",
+          "hidden": 32,
+          "alpha": 0.0001,
+          "max_epochs": 60
+        },
+        "refit_every": 252,
+        "train_window_days": 756,
+        "subsample": null,
+        "pred_smoothing_halflife": 0
+      },
+      {
+        "name": "mlp_slow",
+        "source_exp_id": "E066",
+        "spec": {
+          "model": "mlp",
+          "hidden": 32,
+          "alpha": 0.0001,
+          "max_epochs": 60
+        },
+        "refit_every": 252,
+        "train_window_days": 756,
+        "subsample": null,
+        "pred_smoothing_halflife": 5
+      }
+    ],
+    "baselines": [
+      {
+        "name": "baseline_rev_5",
+        "source_exp_id": "E005",
+        "rule": "-vadj_c.rolling(5, min_periods=3).mean()"
+      },
+      {
+        "name": "baseline_mom_12_1",
+        "source_exp_id": "E006",
+        "rule": "vadj_c.rolling(231, min_periods=231).sum().shift(21)"
+      }
+    ],
+    "protocol_version": "corrected_v2",
+    "purpose": "Corrections after original test results were observed; no new finalist selection.",
+    "period_convention": "realization dates",
+    "train_cutoff": "target_realization_date < prediction_date",
+    "panel_start": "1981-05-22",
+    "first_refit": "1990-01-01",
+    "seed": 42,
+    "min_predictions": 100,
+    "output_dir": "results/corrected_v2",
+    "warmup": "One extra fit before the first scheduled refit supplies the first outcome and one-day delay; regular refit dates are unchanged.",
+    "execution_assumption": "Features known at close t, returns t to t+1; same-close execution assumed, delayed execution reported separately.",
+    "historical_harness_commit": "cceeb15e720d5b637c2082d1da9a74c5f101496a"
+  },
+  "status": "complete",
+  "test_status": "correction_after_original_results_observed",
+  "completed_stage": "all"
+}

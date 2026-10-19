@@ -52,8 +52,8 @@ def test_every_refit_trains_strictly_before_it_predicts(toy):
     assert len(records["lasso"]) == 7                                    # refits at days 150, 170, ..., 270
     for k, rec in zip(range(150, 281, 20), records["lasso"]):
         assert rec["refit_date"] == days[k].date()
-        assert rec["train_last"] == days[k - 1].date()                   # last training row is day d-1
-        assert rec["train_first"] == days[k - 60].date()                 # window of 60 days: d-60..d-1
+        assert rec["train_last"] == days[k - 2].date()                   # last feature row is day d-2; outcome is d-1
+        assert rec["train_first"] == days[k - 61].date()                 # 60 eligible feature days: d-61..d-2
 
 
 def test_expanding_window_starts_at_the_first_panel_day(toy):
@@ -61,7 +61,7 @@ def test_expanding_window_starts_at_the_first_panel_day(toy):
     spec = {"lasso": {"model": "lasso", "alpha": 0.01}}
     _, records = walk_forward(toy["panel"], spec, days[150], days[200], refit_every=25, train_window=None)
     assert [r["train_first"] for r in records["lasso"]] == [days[0].date()] * 3
-    assert [r["train_last"] for r in records["lasso"]] == [days[k - 1].date() for k in (150, 175, 200)]
+    assert [r["train_last"] for r in records["lasso"]] == [days[k - 2].date() for k in (150, 175, 200)]
 
 
 def test_predictions_do_not_change_when_the_future_is_removed(toy):

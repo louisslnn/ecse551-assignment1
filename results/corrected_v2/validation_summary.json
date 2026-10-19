@@ -1,0 +1,28 @@
+{
+  "verified_at": "2026-10-18T23:30:34.935166-04:00",
+  "status": "passed",
+  "protocol": "corrected_v2",
+  "tests_passed": 49,
+  "development_definitions_replayed": 62,
+  "finalists_and_baselines": 6,
+  "test_realization_days": 754,
+  "minimum_scored_stocks_per_test_day": 491,
+  "refit_records_checked": 2388,
+  "inline_figures": 12,
+  "all_code_cells_executed": true,
+  "notebook_error_outputs": 0,
+  "historical_artifacts_unchanged": true,
+  "input_data_tracked": false,
+  "model_settings_reselected": false,
+  "test_interpretation": "correction after original results were observed",
+  "truncation_check": {
+    "model": "lasso",
+    "cutoff": "1995-06-30",
+    "prediction_days": 1393,
+    "max_absolute_difference": 1.1641532182693481e-10,
+    "rtol": 1e-06,
+    "atol": 1e-08,
+    "raw_rows_removed_before_cleaning": true
+  },
+  "notebook_sha256": "de29378c0f878b29b07eba2de6a095059e195cb2e017e1ed9c7f565165f590f5"
+}

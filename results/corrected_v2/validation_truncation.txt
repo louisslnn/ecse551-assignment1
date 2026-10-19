@@ -1,0 +1,2 @@
+Largest prediction difference after raw truncation: 1.1641532182693481e-10
+lasso 1995-06-30 1393 prediction days match within float32 tolerance

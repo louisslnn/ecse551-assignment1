@@ -17,7 +17,7 @@ LOG_COLUMNS = [
 ]
 
 
-def append_log(row, path="results/experiment_log.csv"):
+def append_log(row, path):
     """Append one experiment row to the log and return its exp_id.
 
     row is a dict whose keys are a subset of LOG_COLUMNS (missing ones are
@@ -28,6 +28,8 @@ def append_log(row, path="results/experiment_log.csv"):
     unknown = set(row) - set(LOG_COLUMNS)
     assert not unknown, f"unknown log columns: {unknown}"
     path = Path(path)
+    if "corrected_v2" not in path.parts:
+        raise ValueError("historical logs are read-only; use a corrected_v2 path")
     path.parent.mkdir(parents=True, exist_ok=True)
 
     is_new = not path.exists()

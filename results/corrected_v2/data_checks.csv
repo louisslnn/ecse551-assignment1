@@ -1,0 +1,9 @@
+check,actual
+trading days,8577.0
+securities,1314.0
+minimum members/day,489.0
+mean members/day,499.793750728693
+member adjusted observations,4227347.0
+adjusted std,1.057435933666875
+adjusted excess kurtosis,22.749636792384933
+share absolute adjusted return > 5,0.0020128463549360866

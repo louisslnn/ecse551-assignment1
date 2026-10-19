@@ -21,7 +21,7 @@ from task3_features import (align_sentiment, build_return_features,  # noqa: E40
                             sentiment_column_map)
 from task3_train import fit_model  # noqa: E402
 
-DATA_DIR = REPO / "data"
+DATA_DIR = REPO / "instructions-data"
 SEED = 42
 TOL = 1e-10
 DEV_END = "2010-12-31"
@@ -218,14 +218,14 @@ def test_training_window_assertion():
     X, y = np.arange(20.0).reshape(10, 2), np.arange(10.0)
     t = days[6]
 
-    fit_model(LinearRegression(), X[:6], y[:6], days[:6], t)           # rows s <= t-1: allowed
+    fit_model(LinearRegression(), X[:5], y[:5], days[:5], t, target_dates=days[1:6])           # rows s <= t-1: allowed
     with pytest.raises(AssertionError, match="lookahead"):
-        fit_model(LinearRegression(), X[:7], y[:7], days[:7], t)       # includes s = t
+        fit_model(LinearRegression(), X[:7], y[:7], days[:7], t, target_dates=days[1:8])       # includes s = t
     with pytest.raises(AssertionError, match="lookahead"):
-        fit_model(LinearRegression(), X, y, days, t)                   # includes s > t
+        fit_model(LinearRegression(), X, y, days, t, target_dates=days + pd.Timedelta(days=1))                   # includes s > t
     with pytest.raises(AssertionError, match="lookahead"):
         shuffled = days[[9, 0, 1, 2]]                                  # one future row hidden first
-        fit_model(LinearRegression(), X[:4], y[:4], shuffled, t)
+        fit_model(LinearRegression(), X[:4], y[:4], shuffled, t, target_dates=shuffled + pd.Timedelta(days=1))
 
 
 def test_shared_data_is_not_modified_by_the_tests(world):
