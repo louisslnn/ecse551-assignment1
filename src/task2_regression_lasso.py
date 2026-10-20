@@ -27,16 +27,21 @@ class LassoRegression():
         for _ in range(self.iterations):
             self.update_weights()
         return self
+    @staticmethod
+    def soft_thresholding(x, threshold):
+        return np.sign(x)*np.maximum(np.abs(x)-threshold, 0)
 
     def update_weights(self):
         Y_prediction = self.predict(self.X)
         #gradients
-        grad_W = (self.X.T @ (Y_prediction - self.Y) / self.m + self.l1_penalty * np.sign(self.W))
+        grad_W = (self.X.T @ (Y_prediction - self.Y) / self.m)
         grad_b = np.mean(Y_prediction - self.Y)
 
         #gradient descent
         self.W -= self.learning_rate * grad_W
         self.b -= self.learning_rate * grad_b
+        W_temp =self.W - self.learning_rate*grad_W
+        self.W = self.soft_thresholding(W_temp, self.learning_rate*self.l1_penalty)
 
         # calculate objective function
         residuals = self.Y - self.predict(self.X)
@@ -66,7 +71,7 @@ l2_penalty = alpha*(1-l1_ratio)
 mymodel = LassoRegression(
     learning_rate=0.05,
     iterations=10000,
-    l1_penalty=l1_penalty,
+    l1_penalty=alpha,
     l2_penalty=l2_penalty
 )
 
@@ -74,7 +79,7 @@ mymodel.fit(X_train_sc, y_train_sc)
 mymodel_n_iter = len(mymodel.loss_history)
 
 sklearn_model = Lasso(
-    alpha=l1_penalty,
+    alpha=alpha,
     max_iter=10000,
     tol=1e-8
 )
@@ -148,7 +153,7 @@ plt.show()
 plt.figure(figsize=(8, 6))
 plt.semilogx(mymodel.loss_history)
 plt.xlabel("Iteration")
-plt.ylabel("Elastic Net objective")
+plt.ylabel("Lasso objective")
 plt.title("Custom Model Convergence")
 plt.tight_layout()
 plt.show()
