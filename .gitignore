@@ -2,3 +2,7 @@ data
 __pycache__/
 .DS_Store
 results/cache/
+report/*
+!report/Makefile
+!report/report.tex
+!report/pdf
