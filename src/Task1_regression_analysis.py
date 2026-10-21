@@ -29,7 +29,7 @@ print(df.describe().loc[['min', 'max']])
 print(df.describe().loc['mean'])
 
 #cor matrix
-correlation = df.correlation()
+correlation = df.corr()
 plt.figure(figsize=(10, 10))
 sns.heatmap(correlation,annot=True,fmt=".2f",cmap="vlag",vmin=-1,vmax=1)
 plt.title("Correlation Matrix")
