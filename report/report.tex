@@ -172,8 +172,19 @@ Fig.~\ref{fig:digits_class_sizes} shows the sample sizes of different digits, de
 % metrics MSE and accuracy mentioned (0.5) and explained (1), description of model training (1).
 % Also: define hyperparameters, state the 70/30 split with random state 42, and how hyperparameters were tuned.
 
-\textit{Evaluation.} \todo{cross-validation used for tuning; definitions of the mean squared error (MSE) and accuracy.}
-For both the regression task and the classification task, the data sets are split using a train/test split of 70\% / 30\% and a random state of 42.
+\textit{Evaluation.} The hyperparameters of the Elastic Net and Lasso models were tuned using a one at a time, where each hyperparameter was varied independently while the remaining parameters were held constant at their baseline values. For both the regression task and the classification task, the data sets are split using a train/test split of 70\% / 30\% and a random state of 42. MSE measures the average of the squared differences between predicted values and true vales, given as:
+
+\begin{equation}
+    \mathrm{MSE} = \frac{1}{n}\sum_{i=1}^{n}(y_i-\hat{y}_i)^2
+\end{equation}
+For the diabetes dataset, $R^2$ is appropriate for accuracy measurement:
+
+\begin{equation}
+    R^2 = 1 -
+    \frac{\sum_{i=1}^{n}(y_i-\hat{y}_i)^2}
+    {\sum_{i=1}^{n}(y_i-\bar{y})^2}
+\end{equation}
+
 
 \subsubsection{ElasticNet Regression}
 For weights $\mathbf w$, bias $b$ and $N$ training pairs $(\mathbf x_j, y_j)$, ElasticNet minimizes
@@ -353,14 +364,30 @@ For prediction, given a new input $x$, every tree produces a class prediction. T
     \caption{Elastic Net $L_2$ Ratio}
     \label{fig:task2_elasticnet_l2.png}
 \end{figure}
-Fig.~\ref{fig:task2_elasticnet_pvsa.png}
-Fig.~\ref{fig:task2_elasticnet_featurecomp.png}
-Fig.~\ref{fig:task2_elasticnet_residual.png}
-Fig.~\ref{fig:task2_elasticnet_l1.png}
-Fig.~\ref{fig:task2_elasticnet_l2.png}
-Fig.~\ref{fig:task2_elasticnet_alpha.png}
-Fig.~\ref{fig:task2_elasticnet_iterperform.png}
-\todo{explain these figures}
+The custom Elastic Net model produced an MSE= 2773.64 and R2 = 0.4862 while the Scikit Learn Linear Regression model produced MSE = 2821.75 and R2 = 0.4773. Fig.~\ref{fig:task2_elasticnet_pvsa.png} Shows the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
+Fig.~\ref{fig:task2_elasticnet_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ and $L_2$ penalties were able to push certain coefficients toward zero and induce sparsity, reducing the influence of redundant or less useful features. Some coefficients remain relatively similar between the two models, indicated that those features are important in prediction. The $L_1$ and $L_2$ ratios are defined in the custom model as $\alpha \cdot L$ratio.
+Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, Fig.~\ref{fig:task2_elasticnet_alpha.png}, and Fig.~\ref{fig:task2_elasticnet_iterperform.png} show how the choice of parameters affect the model's performance.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Elastic Net Hyperparameter Optimization Results}
+    \label{tab:elasticnet_hyperparameters}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Hyperparameter} & \textbf{Tested Range} & \textbf{Best Value} \\
+        \hline
+        Learning Rate & 0.001--0.2 & 0.025 \\
+        \hline
+        Iterations & 100--10,000 & 500 \\
+        \hline
+        Alpha ($\alpha$) & 0.001--1.0 & 0.05 \\
+        \hline
+        L1 Ratio & 0--1 & 0.5 \\
+        \hline
+        L2 Ratio & 0--1 & 0.5 \\
+        \hline
+    \end{tabular}
+\end{table}
 
 \subsubsection{Lasso.}
 \begin{figure}
@@ -411,7 +438,27 @@ Fig.~\ref{fig:task2_lasso_residual.png}
 Fig.~\ref{fig:task2_lasso_l1.png}
 Fig.~\ref{fig:task2_lasso_alpha.png}
 Fig.~\ref{fig:task2_lasso_iterperform.png}
-\todo{explain these figures}
+The custom Lasso model produced an MSE= 2774.43 and R2 = 0.4861 while the Scikit Learn Linear Regression model produced MSE = 2821.75 and R2 = 0.4773. Fig.~\ref{fig:task2_lasso_pvsa.png} examines the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Like the elastic net analysis, both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
+Fig.~\ref{fig:task2_elasticnet_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ penalty was able to push certain coefficients toward zero, reducing the influence of redundant or less useful features. Again, some coefficients remain relatively similar between the two models, indicated that those features are important in prediction.
+Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, Fig.~\ref{fig:task2_elasticnet_alpha.png}, and Fig.~\ref{fig:task2_elasticnet_iterperform.png} show how the choice of parameters affect the model's performance.
+\begin{table}[htbp]
+    \centering
+    \caption{Lasso Hyperparameter Optimization Results}
+    \label{tab:elasticnet_hyperparameters}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Hyperparameter} & \textbf{Tested Range} & \textbf{Best Value} \\
+        \hline
+        Learning Rate & 0.001--0.2 & 0.025 \\
+        \hline
+        Iterations & 100--10,000 & 500 \\
+        \hline
+        Alpha ($\alpha$) & 0.001--1.0 & 0.1 \\
+        \hline
+        L1 Ratio & 0--1 & 0.75 \\
+        \hline
+    \end{tabular}
+\end{table}
 
 \subsubsection{Multiclass SVM}
 For tunning the SVM model, a grid search is performed for regularization parameter $\lambda$ and learning rate $\eta$, with the number of iterations set to a fixed value. The ranges of $\lambda$ and $\eta$ are shown in the $x$-axis of Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} and Fig.~\ref{fig:digits_svm_accuracy_vs_lr}. At each point in the grid, the performance is evaluated as the mean accuracy in a 5-fold cross-validation. This procedure is repeated for different numbers of iterations $n_{\text{iter}}$ until $n_{\text{iter}}$ is just large enough that the best performance plateaus. The gray vertical lines in Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} and Fig.~\ref{fig:digits_svm_accuracy_vs_lr} indicate the best hyperparameter values. The chosen values are
