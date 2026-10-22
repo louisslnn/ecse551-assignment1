@@ -1,7 +1,7 @@
-...........................                                              [100%]
+.......................................                                  [100%]
 =============================== warnings summary ===============================
 tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
-  /tmp/ecse551-notebook-env/lib/python3.12/site-packages/matplotlib/_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+  /private/tmp/ecse551-notebook-env/lib/python3.12/site-packages/matplotlib/_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
     prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
 
 tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
@@ -10,7 +10,7 @@ tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
 tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
 tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
 tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
-  /tmp/ecse551-notebook-env/lib/python3.12/site-packages/matplotlib/_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+  /private/tmp/ecse551-notebook-env/lib/python3.12/site-packages/matplotlib/_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
     parse = parser.parseString(pattern)
 
 tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
@@ -19,18 +19,18 @@ tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
 tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
 tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
 tests/test_compact_notebook.py::test_ewma_equations_burn_in_and_lag
-  /tmp/ecse551-notebook-env/lib/python3.12/site-packages/matplotlib/_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+  /private/tmp/ecse551-notebook-env/lib/python3.12/site-packages/matplotlib/_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
     parser.resetCache()
 
 tests/test_compact_notebook.py::test_constant_predictions_have_undefined_sharpe_and_ic
 tests/test_compact_notebook.py::test_tiny_constant_forecasts_do_not_create_numerical_market_exposure
-  /tmp/ecse551-notebook-env/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:3045: RuntimeWarning: invalid value encountered in divide
+  /private/tmp/ecse551-notebook-env/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:3045: RuntimeWarning: invalid value encountered in divide
     c /= stddev[:, None]
 
 tests/test_compact_notebook.py::test_constant_predictions_have_undefined_sharpe_and_ic
 tests/test_compact_notebook.py::test_tiny_constant_forecasts_do_not_create_numerical_market_exposure
-  /tmp/ecse551-notebook-env/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:3046: RuntimeWarning: invalid value encountered in divide
+  /private/tmp/ecse551-notebook-env/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:3046: RuntimeWarning: invalid value encountered in divide
     c /= stddev[None, :]
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-27 passed, 17 warnings in 2.02s
+39 passed, 17 warnings in 2.07s

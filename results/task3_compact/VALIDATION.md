@@ -1,52 +1,82 @@
-# Compact notebook validation
+# Gap-reset validation
 
-Validated on 22 October 2026, based on remote main `c975847`, on
-`feature/task3-notebook`. The earlier PR was not merged.
+Validated on 22 October 2026 on `feature/task3-gap-burn-in`, based directly on main
+`ecfa4870cf8c41fa9b60bd2ce5af27edc11291bd`. The active notebook retains main's function and variable names.
 
-## Executed deliverable
+## Change and execution scope
 
-- Combined notebook: 68 cells, all 41 code cells executed, zero error outputs.
-- Task 3: 28 cells, including 16 code cells (432 code lines) and five inline figures.
-- All 52 figures across the combined notebook are saved inline.
-- The full notebook executed from a fresh kernel in an isolated directory containing
-  only the notebook and supplied CSV files. A second, independent run executed just
-  Task 3 in another isolated directory. Neither used repository imports or old results.
-- The independent runs reproduced the displayed development, selected-configuration
-  and test tables. Task 3 took 8.2 minutes in the combined run; total notebook time
-  was about 9.9 minutes on this machine while both runs were active.
+The volatility function now resets mean, variance and observation count on the 21st
+consecutive missing trading row, then requires 100 newly observed returns. Shorter
+gaps retain the previous behavior. Volatility first appears at observation 100;
+the lagged adjusted return first appears at observation 101. Missing returns, not
+index membership or elapsed calendar days, trigger the reset.
 
-## Correctness and scope checks
+Only Task 3 was freshly executed. All Task 1/2 cells, outputs and metadata are
+preserved exactly from main. Historical modules, result files outside this compact
+directory, and the report remain unchanged. The tests' outdated function references
+were mechanically aligned with main; no naming refactor was made in the notebook.
 
-- 27 behavioral/source-preservation tests passed. The tests load the function
-  definitions directly from the submitted notebook.
-- 319 recorded refits passed the strict `last_training_outcome < refit_date` assertion.
-- All 754 test outcome days were scored, with at least 491 stocks every day.
-- Real-data truncation at 2010-06-30 and 2013-12-30 produced exactly unchanged
-  features and Lasso predictions: maximum absolute differences were zero.
-- Synthetic tests cover year/holiday boundaries, current-day label exclusion,
-  missing-day/low-coverage failures, independent P&L/IC/Sharpe/market calculations,
-  holding-period gaps and zero turnover, constant forecasts and delayed sentiment.
-- Task 1/2 source and experiment behavior match main after removing only local
-  import/path bootstrap code. All existing source modules, the old report and
-  historical result files remain unchanged.
-- Every Task 3 grading category is mapped to notebook evidence in its appendix.
+## Runs and checks
 
-## Reading the accompanying files
+- A fresh unchanged-main baseline and two independent changed-study runs each used
+  isolated kernels with only the Task 3 notebook cells and five supplied CSV inputs.
+  The pinned notebook dependencies were verified before running.
+- Each run repeated all 16 development rows and the existing selection rule, followed
+  by all six test strategies, including smoothing and delayed execution. No grids,
+  seeds, feature definitions, training windows or refit schedules changed.
+- The two changed runs match at `rtol=1e-6`, `atol=1e-8` for development, selection and
+  test tables, and full-precision daily P&L and rank IC. Maximum differences are
+  recorded in `validation_summary.json`.
+- All 16 Task 3 code cells executed without error outputs. The combined notebook's
+  remaining 25 code cells retain their previously saved outputs. Five Task 3 figures
+  were regenerated and visually checked.
+- 39 compact-notebook tests passed, covering the existing timing/metric/source checks
+  and the new gap boundary, fresh-state, stock independence, burn-in and causality cases.
+- Each run checked 319 refits with `last_training_outcome < refit_date`. All 754 test
+  outcome days were scored, with at least 491 predictions and scored stocks per day.
+- Raw-data truncation at 2010-06-30 and 2013-12-30 produced exactly unchanged volatility,
+  features and Lasso predictions. The independent truncation refits also passed timing guards.
+- The sandbox logged an ipykernel process-enumeration warning during shutdown, after
+  successful execution/export. Notebook cells had zero error outputs and all runs completed.
 
-`validation_summary.json` records counts, source/notebook/data hashes and truncation
-checks. The three CSV files reproduce the **displayed** tables, at notebook display
-precision; they are not notebook dependencies. Figures are also saved here as PNG
-copies for inspection.
+Measured Task 3 runtimes, excluding final export/kernel shutdown:
 
-## Deliberately preserved limitations
+- baseline: 8.74 minutes.
+- changed: 8.47 minutes.
+- repeat: 5.77 minutes.
 
-The compact study follows already viewed test results, so its evaluation is not a
-fresh blind test. Returns assume same-close execution and omit trading costs; the
-notebook includes a one-day delay diagnostic.
+## Baseline comparison
 
-Task 1/2 were packaged, not corrected or certified. Two observed existing issues
-remain: classification uses `test_size=0.7` instead of the specified 0.3, and the
-Lasso update subtracts its weight gradient twice before soft thresholding.
+The data contain 16 resumed gaps of at least 21 missing trading rows across 15 stock
+series. Restarting burn-in creates no additional unavailable adjusted member returns
+in this dataset. Selected configurations remain unchanged:
 
-The assignment PDF separately requests a report PDF. The notebook-only delivery
-follows the user's instruction and does not waive that stated requirement.
+- lasso: `{"alpha": 0.0001, "model": "lasso"}`.
+- forest: `{"depth": 8, "leaf": 200, "model": "forest"}`.
+- mlp: `{"epochs": 40, "hidden": 32, "model": "mlp"}`.
+
+| Strategy | Baseline test Sharpe | Reset test Sharpe | Change |
+|---|---:|---:|---:|
+| lasso | 1.312907 | 1.312907 | -1.023e-09 |
+| forest | 3.189437 | 3.189437 | -1.321e-09 |
+| mlp | 2.343392 | 2.343392 | +1.055e-09 |
+| MLP smoothed | 1.241707 | 1.241707 | +3.069e-09 |
+| 5-day reversal | 0.727769 | 0.727769 | +2.168e-09 |
+| 12–1 momentum | 0.779349 | 0.779349 | -4.096e-08 |
+
+Test scoring coverage is unchanged. The largest absolute Sharpe change is
+4.096e-08; performance is effectively unchanged.
+The reset is a missing-data handling improvement, not evidence of better performance.
+
+`gap_reset_comparison.csv` contains full-precision before/after settings, development
+Sharpes for selected models, test metrics, yearly/delayed Sharpes, coverage and gap counts.
+The existing three published CSV tables retain notebook display precision; the JSON
+summary records base/notebook/source/input hashes, runtimes, gap counts and validation.
+
+## Preserved limitations
+
+This study follows previously viewed test results and is not a fresh blind test.
+Same-close execution and omitted trading costs remain limitations. Task 1/2 were
+preserved, not corrected or certified: their existing classification split and Lasso
+gradient-update issues remain. The assignment separately requires a report PDF;
+the report was outside this change.
