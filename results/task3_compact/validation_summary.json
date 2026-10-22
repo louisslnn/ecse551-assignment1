@@ -1,0 +1,60 @@
+{
+  "base_commit": "c9758475f21562edeacc8c14026464e0076d3b4f",
+  "branch": "feature/task3-notebook",
+  "protocol": "compact_v1_after_original_test_seen",
+  "combined": {
+    "total_cells": 68,
+    "code_cells": 41,
+    "task3_code_cells": 16,
+    "task3_code_lines": 432,
+    "unexecuted_code_cells": 0,
+    "error_outputs": 0,
+    "inline_figures": 52,
+    "task3_source_sha256": "03cdc5ad7c7bfc999e6ec9b1f6505f69c45acfbd4c65c95dd334d6bb9f02dd1d"
+  },
+  "standalone_task3": {
+    "total_cells": 28,
+    "code_cells": 16,
+    "task3_code_cells": 16,
+    "task3_code_lines": 432,
+    "unexecuted_code_cells": 0,
+    "error_outputs": 0,
+    "inline_figures": 5,
+    "task3_source_sha256": "03cdc5ad7c7bfc999e6ec9b1f6505f69c45acfbd4c65c95dd334d6bb9f02dd1d"
+  },
+  "development_results_data_rows": 16,
+  "test_results_data_rows": 6,
+  "selected_configurations_data_rows": 3,
+  "real_data_truncation_checks": [
+    {
+      "cutoff": "2010-06-30",
+      "feature_max_abs_difference": 0.0,
+      "prediction_max_abs_difference": 0.0
+    },
+    {
+      "cutoff": "2013-12-30",
+      "feature_max_abs_difference": 0.0,
+      "prediction_max_abs_difference": 0.0
+    }
+  ],
+  "behavioral_tests_passed": 27,
+  "published_tables_match_between_independent_runs": true,
+  "notebook_sha256": "33c7ad63c9261cc8e7530f04647c88aa1c020c4b81cfb7ffe96b1ace86e5a572",
+  "data_sha256": {
+    "eq_indicator.csv": "eb1fa83b5e0b7ae7ff88cd8062763ae40f17203db32a2761bfb612543ad8d9e6",
+    "psych_stock_metadata.csv": "68ffd8f54a600c008c88c8e1ec4179926d19a1f51d62f572c69175deb7b24472",
+    "eq_stock_metadata.csv": "e19550d169df95848a49db8e617374d30db55036f001aeeeb544f8d433e58cf0",
+    "psych_bullish.csv": "973681e7876520c178648adcce1591f610941a7fa309a5688f4e9c71104ca16f",
+    "psych_bearish.csv": "26c98820dfc43375eca2062786a11e59ae935081dead3f8b4b96a358cfedab49",
+    "eq_returns.csv": "53153c2324f98e6527b3eb3ea694697a1673eff682ed44f12b7c9a5423558479"
+  },
+  "checked_refits": 319,
+  "minimum_test_scored_stocks": 491,
+  "test_outcome_days": 754,
+  "task3_runtime_minutes": 8.2,
+  "known_preserved_task12_issues": [
+    "Classification uses test_size=0.7 rather than the assignment 0.3.",
+    "Lasso subtracts the same weight gradient twice before soft thresholding."
+  ],
+  "task3_figures": 5
+}

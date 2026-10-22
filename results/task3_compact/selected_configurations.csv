@@ -1,0 +1,4 @@
+Selected family,spec,development Sharpe
+lasso,"{'model': 'lasso', 'alpha': 0.0001}",2.624791
+forest,"{'model': 'forest', 'depth': 8, 'leaf': 200}",4.748555
+mlp,"{'model': 'mlp', 'hidden': 32, 'epochs': 40}",3.963268
