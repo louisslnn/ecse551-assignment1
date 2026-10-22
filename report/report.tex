@@ -63,7 +63,7 @@ Task 3 uses daily returns of S\&P~500 constituents from 1980 to 2013 and social-
 The Diabetes dataset contains information about 442 patients and 10 real-valued baseline variables. The target variable measures disease progression one year after baseline. For preprocessing, it is determined that there are no missing features or values nor are there erraneous values to be cleaned. Comparing the original (Fig. ~\ref{fig:task1_regression_distributions_unscaled}) and scaled distributions (Fig. ~\ref{fig:task1_regression_distributions}) demonstrates that scaling centers the features around zero and makes their magnitudes more comparable. This is important for gradient based optimization and regularized regression, because features with different scales can negatively influence the regularization penalties. Fig. ~\ref{fig:task1_regression_boxplot} shows that outliers are present in most of the features, however, are not necessary to clean because medical variations exist and reflect diversities in human health.
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task1_regression_distributions_unscaled.png}
+    \safefig{task1_regression_distributions_unscaled.png}
     \caption{Feature Distributions (Unscaled)}
     \label{fig:task1_regression_distributions_unscaled}
 \end{figure}
@@ -72,14 +72,14 @@ The Digits data set consists of 1797 8x8 images of handwritten single digits lab
 
 \begin{figure}[t]
 \centering
-\safefig{digits_pixel_intensity_distribution.png}
+\safefig[0.9]{digits_pixel_intensity_distribution.png}
 \caption{Pixel intensity distribution in digits}
 \label{fig:digits_pixel_intensity_distribution}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\safefig{digits_ink_amount_distribution.png}
+\safefig[0.9]{digits_ink_amount_distribution.png}
 \caption{Distrbution of the total amount of ink in a digit image}
 \label{fig:digits_ink_amount_distribution}
 \end{figure}
@@ -112,25 +112,25 @@ max   & 79.000 & 2.000 & 42.200 & 133.000 & 301.000 & 242.400 & 99.000 & 9.090 &
 \end{table}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task1_regression_distributions.png}
+    \safefig{task1_regression_distributions.png}
     \caption{Feature Distributions (Scaled)}
     \label{fig:task1_regression_distributions}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task1_regression_corr_matrix.png}
+    \safefig{task1_regression_corr_matrix.png}
     \caption{Feature Correlation}
     \label{fig:task1_regression_corr_matrix}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task1_regression_correlations.png}
+    \safefig{task1_regression_correlations.png}
     \caption{Examples of Correlated Features}
     \label{fig:task1_regression_correlations}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task1_regression_boxplot.png}
+    \safefig{task1_regression_boxplot.png}
     \caption{Box Plots of Features}
     \label{fig:task1_regression_boxplot}
 \end{figure}
@@ -141,7 +141,7 @@ Fig.~\ref{fig:digits_class_sizes} shows the sample sizes of different digits, de
 
 \begin{figure}[t]
 \centering
-\safefig{digits_class_sizes.png}
+\safefig[0.9]{digits_class_sizes.png}
 \caption{Class sizes of the Digits dataset}
 \label{fig:digits_class_sizes}
 \end{figure}
@@ -307,49 +307,49 @@ For prediction, given a new input $x$, every tree produces a class prediction. T
 \subsubsection{Elastic Net.} 
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_elasticnet_pvsa.png}
+    \safefig{task2_elasticnet_pvsa.png}
     \caption{Elastic Net Predicted vs. Actual}
     \label{fig:task2_elasticnet_pvsa.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_elasticnet_residual.png}
+    \safefig{task2_elasticnet_residual.png}
     \caption{Elastic Net Residual}
     \label{fig:task2_elasticnet_residual.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_elasticnet_featurecomp.png}
+    \safefig{task2_elasticnet_featurecomp.png}
     \caption{Elastic Net Feature Comparison}
     \label{fig:task2_elasticnet_featurecomp.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_elasticnet_lr.png}
+    \safefig{task2_elasticnet_lr.png}
     \caption{Elastic Net Learning Rate}
     \label{fig:task2_elasticnet_lr.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_elasticnet_l1.png}
+    \safefig{task2_elasticnet_l1.png}
     \caption{Elastic Net $L_1$ Ratio}
     \label{fig:task2_elasticnet_l1.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_elasticnet_alpha.png}
+    \safefig{task2_elasticnet_alpha.png}
     \caption{Elastic Net Alpha}
     \label{fig:task2_elasticnet_alpha.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_elasticnet_iterperform.png}
+    \safefig{task2_elasticnet_iterperform.png}
     \caption{Elastic Net Iterations}
     \label{fig:task2_elasticnet_iterperform.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_elasticnet_l2.png}
+    \safefig{task2_elasticnet_l2.png}
     \caption{Elastic Net $L_2$ Ratio}
     \label{fig:task2_elasticnet_l2.png}
 \end{figure}
@@ -365,43 +365,43 @@ Fig.~\ref{fig:task2_elasticnet_iterperform.png}
 \subsubsection{Lasso.}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_lasso_pvsa.png}
+    \safefig{task2_lasso_pvsa.png}
     \caption{Elastic Net Predicted vs. Actual}
     \label{fig:task2_lasso_pvsa.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_lasso_residual.png}
+    \safefig{task2_lasso_residual.png}
     \caption{Elastic Net Residual}
     \label{fig:task2_lasso_residual.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_lasso_featurecomp.png}
+    \safefig{task2_lasso_featurecomp.png}
     \caption{Elastic Net Feature Comparison}
     \label{fig:task2_lasso_featurecomp.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_lasso_lr.png}
+    \safefig{task2_lasso_lr.png}
     \caption{Elastic Net Learning Rate}
     \label{fig:task2_lasso_lr.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_lasso_l1.png}
+    \safefig{task2_lasso_l1.png}
     \caption{Elastic Net $L_1$ Ratio}
     \label{fig:task2_lasso_l1.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_lasso_alpha.png}
+    \safefig{task2_lasso_alpha.png}
     \caption{Elastic Net Alpha}
     \label{fig:task2_lasso_alpha.png}
 \end{figure}
 \begin{figure}
     \centering
-    \includegraphics[width=1\linewidth]{task2_lasso_iterperform.png}
+    \safefig{task2_lasso_iterperform.png}
     \caption{Elastic Net Iterations}
     \label{fig:task2_lasso_iterperform.png}
 \end{figure}
