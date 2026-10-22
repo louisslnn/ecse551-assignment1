@@ -3,7 +3,7 @@ from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.linear_model import Lasso
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -78,11 +78,7 @@ mymodel = LassoRegression(
 mymodel.fit(X_train_sc, y_train_sc)
 mymodel_n_iter = len(mymodel.loss_history)
 
-sklearn_model = Lasso(
-    alpha=alpha,
-    max_iter=10000,
-    tol=1e-8
-)
+sklearn_model = LinearRegression()
 
 sklearn_model.fit(X_train_sc, y_train_sc)
 
@@ -105,7 +101,6 @@ evaluate("Scikit Learn lasso", y_test, sklearn_preds)
 print("\nscratch coefficients:", mymodel.W)
 print("Scikit Learn coefficients:", sklearn_model.coef_)
 print("Custom iterations:", mymodel_n_iter)
-print("Scikit Learn iterations:", sklearn_model.n_iter_)
 
 
 #Plotting

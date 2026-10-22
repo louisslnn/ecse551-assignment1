@@ -59,9 +59,14 @@ Task 3 uses daily returns of S\&P~500 constituents from 1980 to 2013 and social-
 
 \subsection{Datasets}
 % Grid: data cleaning and preprocessing steps clearly described (2).
-\todo{Loading; checks for missing and erroneous values and their outcome; any cleaning or outlier handling; scaling decisions.}
 \subsubsection{Diabetes}
-
+The Diabetes dataset contains information about 442 patients and 10 real-valued baseline variables. The target variable measures disease progression one year after baseline. For preprocessing, it is determined that there are no missing features or values nor are there erraneous values to be cleaned. Comparing the original (Fig. ~\ref{fig:task1_regression_distributions_unscaled}) and scaled distributions (Fig. ~\ref{fig:task1_regression_distributions}) demonstrates that scaling centers the features around zero and makes their magnitudes more comparable. This is important for gradient based optimization and regularized regression, because features with different scales can negatively influence the regularization penalties. Fig. ~\ref{fig:task1_regression_boxplot} shows that outliers are present in most of the features, however, are not necessary to clean because medical variations exist and reflect diversities in human health.
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task1_regression_distributions_unscaled.png}
+    \caption{Feature Distributions (Unscaled)}
+    \label{fig:task1_regression_distributions_unscaled}
+\end{figure}
 \subsubsection{Digits}
 The Digits data set consists of 1797 8x8 images of handwritten single digits labeled with the digits, so there are 64 features (one pixel each) and 10 labels (0--9). Each feature is an integer between 0 and 16 (inclusive) that indicates the grayscale intensity of a pixels. The data set is linted to check for any missing or out-of-range feature values or label values, and none is found. As shown by Fig.~\ref{fig:digits_pixel_intensity_distribution}, the pixel intensity spreads across the entire range and concentrates at the minimum and the maximum. The distribution of the total amount of ink in a digit image, as defined by the sum of pixel intensities, is shown in Fig.~\ref{fig:digits_ink_amount_distribution}. It approximates a bell curve and there is no notable abnormality.
 
@@ -83,11 +88,56 @@ The Digits data set consists of 1797 8x8 images of handwritten single digits lab
 % Grid: statistical data analysis included, e.g. means, box plots, correlations (1).
 % Assignment questions: means, min/max, need for scaling, modality, heavy tails vs Gaussian, discrete features, correlated features.
 \subsubsection{Diabetes}
-\todo{Diabetes: feature statistics (note that scikit-learn's features are already centred and scaled, the target is not), distributions, correlations with the target.}
+Fig.~\ref{fig:task1_regression_distributions} shows the histograms of all the features, showing that several features have approximately bell shaped distributions centered around one mode, although some exhibit skewness. Fig.~\ref{fig:task1_regression_boxplot} are the box plots showing the distribution and variability of each feature. Sex is represented by two numerical categories, but as it is a categorical variable, its box plot is not very informative. Finally, Fig.~\ref{fig:task1_regression_corr_matrix} shows the correlation coefficients between features and the target while Fig.~\ref{fig:task1_regression_correlations} shows scatter plots of moderately positive correlations. Strong correlations between features show multicollinearity, where multiple features have overlapping information.
+\begin{table}[htbp]
+\centering
+\caption{Statistics of the Diabetes Dataset}
+\label{tab:diabetes_stats}
+\resizebox{0.48\textwidth}{!}{%
+\begin{tabular}{lrrrrrrrrrr}
+\hline
+ & age & sex & bmi & bp & s1 & s2 & s3 & s4 & s5 & s6 \\
+\hline
+count & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 \\
+mean  & 48.518 & 1.468 & 26.376 & 94.647 & 189.140 & 115.439 & 49.788 & 4.070 & 4.641 & 91.260 \\
+std   & 13.109 & 0.500 & 4.418 & 13.831 & 34.608 & 30.413 & 12.934 & 1.290 & 0.522 & 11.496 \\
+min   & 19.000 & 1.000 & 18.000 & 62.000 & 97.000 & 41.600 & 22.000 & 2.000 & 3.258 & 58.000 \\
+25\%  & 38.250 & 1.000 & 23.200 & 84.000 & 164.250 & 96.050 & 40.250 & 3.000 & 4.277 & 83.250 \\
+50\%  & 50.000 & 1.000 & 25.700 & 93.000 & 186.000 & 113.000 & 48.000 & 4.000 & 4.621 & 91.000 \\
+75\%  & 59.000 & 2.000 & 29.275 & 105.000 & 209.750 & 134.500 & 57.750 & 5.000 & 4.997 & 98.000 \\
+max   & 79.000 & 2.000 & 42.200 & 133.000 & 301.000 & 242.400 & 99.000 & 9.090 & 6.107 & 124.000 \\
+\hline
+\end{tabular}%
+}
+\end{table}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task1_regression_distributions.png}
+    \caption{Feature Distributions (Scaled)}
+    \label{fig:task1_regression_distributions}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task1_regression_corr_matrix.png}
+    \caption{Feature Correlation}
+    \label{fig:task1_regression_corr_matrix}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task1_regression_correlations.png}
+    \caption{Examples of Correlated Features}
+    \label{fig:task1_regression_correlations}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task1_regression_boxplot.png}
+    \caption{Box Plots of Features}
+    \label{fig:task1_regression_boxplot}
+\end{figure}
 
 \subsubsection{Digits}
 
-Fig.~\ref{fig:digits_class_sizes} shows the sample sizes of different digits, demonstrating that the class sizes are balanced. The mean digit imaage is shown in Fig.~\ref{fig:digits_mean_image}. Pixels are generally dimmer near the left and right edges, but the middle of the top and the bottom edges have the strongest mean pixel intensities. Fig.~\ref{fig:digits_image_variance} shows the heat map of pixel intensity variance, indicating that the variance is the highest near the center. The pixels on the left and right edges have a zero or near zero variance, indicating that all or most of those pixels have a constant value, which, based on the mean image, is zero. 
+Fig.~\ref{fig:digits_class_sizes} shows the sample sizes of different digits, demonstrating that the class sizes are balanced. The mean digit image is shown in Fig.~\ref{fig:digits_mean_image}. Pixels are generally dimmer near the left and right edges, but the middle of the top and the bottom edges have the strongest mean pixel intensities. Fig.~\ref{fig:digits_image_variance} shows the heat map of pixel intensity variance, indicating that the variance is the highest near the center. The pixels on the left and right edges have a zero or near zero variance, indicating that all or most of those pixels have a constant value, which, based on the mean image, is zero. 
 
 \begin{figure}[t]
 \centering
@@ -128,15 +178,79 @@ For both the regression task and the classification task, the data sets are spli
 \subsubsection{ElasticNet Regression}
 For weights $\mathbf w$, bias $b$ and $N$ training pairs $(\mathbf x_j, y_j)$, ElasticNet minimizes
 \begin{equation}
-\mathcal L(\mathbf w, b) = \frac{1}{N}\sum_{j=1}^{N}\bigl(y_j - \mathbf w^\top\mathbf x_j - b\bigr)^2 + \lambda_1\lVert\mathbf w\rVert_1 + \lambda_2\lVert\mathbf w\rVert_2^2.
+\mathcal L(\mathbf w, b) = \frac{1}{2N}\sum_{j=1}^{N}\bigl(y_j - \mathbf w^\top\mathbf x_j - b\bigr)^2 + \lambda_1\lVert\mathbf w\rVert_1 + \frac{\lambda_2}{2}\lVert\mathbf w\rVert_2^2.
 \end{equation}
-\todo{Gradient-descent update used for ElasticNet; hyperparameters and their roles.}
+For gradient descent, the weight and bias updates are as follows:
+\begin{equation}
+\small
+\mathbf{W}^{(t+1)} = \mathbf{W}^{(t)} - \eta \left[
+\frac{1}{N}\mathbf{X}^T(\hat{\mathbf{Y}}-\mathbf{Y})
++ \lambda_1 \operatorname{sign}(\mathbf{W}^{(t)})
++\lambda_2\mathbf{W}^{(t)}
+\right]
+\end{equation}
+
+\begin{equation}
+b^{(t+1)} = b^{(t)} - \eta \frac{1}{N}
+\sum_{i=1}^{N}(\hat{y}_i-y_i)
+\end{equation}
+where: $\lambda_1$ controls the strength of the $L_1$ penalty (sparsity and feature selection) and $\lambda_2$ controls the strength of the $L_2$ penalty (shrinking and correlated weights together).
 
 \subsubsection{Lasso Regression with Soft Thresholding}
-The Lasso is the special case $\lambda_2 = 0$. \todo{Soft-thresholding update: a gradient step on the squared error followed by $w_k \leftarrow \mathrm{sign}(w_k)\max(|w_k| - \eta\lambda_1, 0)$, with learning rate $\eta$; check that this matches the code.}
-
+The Lasso is the special case $\lambda_2 = 0$. Lass minimizes
+\begin{equation}
+\mathcal{L}(W, b) = \frac{1}{2m} \sum_{i=1}^{m} \left( \hat{y}^{(i)} - y^{(i)} \right)^2 + \lambda_1 \sum_{j=1}^{n} |w_j|
+\end{equation}
+For gradient descent, the weight and bias updates are as follows:
+\begin{equation}
+\nabla_W \mathcal{L}_{\text{OLS}} = \frac{1}{m} X^T (\hat{Y} - Y)
+\end{equation}
+\begin{equation}
+\nabla_b \mathcal{L}_{\text{OLS}} = \frac{1}{m} \sum_{i=1}^{m} (\hat{y}^{(i)} - y^{(i)})
+\end{equation}
+From soft thresholding
+\begin{equation}
+W_{\text{temp}} = W - \eta \cdot \nabla_W \mathcal{L}_{\text{OLS}}
+\end{equation}
+\begin{equation}
+W^{(t+1)} = \mathcal{S}\left(W_{\text{temp}}, \eta \lambda_1\right)
+\end{equation}
+\begin{equation}
+\mathcal{S}(x, \gamma) = \text{sign}(x) \cdot \max(|x| - \gamma, 0)
+\end{equation}
+with $\gamma = \eta \cdot \lambda_1$ which is the threshold value
+\begin{equation}
+b^{(t+1)} = b^{(t)} - \eta \nabla_b\mathcal{L}_{OLS}
+\end{equation}
 \subsubsection{Linear Regression}
-\todo{Ordinary least squares with scikit-learn's \texttt{LinearRegression}, used as the unregularized reference.}
+Scikit-learn's Linear Regression uses Ordinary least squares:
+\begin{equation}
+\mathcal{L}(W,b) = \frac{1}{2m}
+\sum_{i=1}^{m}
+\left(\hat{y}^{(i)} - y^{(i)}\right)^2
+\end{equation}
+
+\begin{equation}
+\nabla_W \mathcal{L} =
+\frac{1}{m}X^T(\hat{Y}-Y)
+\end{equation}
+
+\begin{equation}
+\nabla_b \mathcal{L} =
+\frac{1}{m}\sum_{i=1}^{m}
+\left(\hat{y}^{(i)}-y^{(i)}\right)
+\end{equation}
+
+
+\begin{equation}
+W^{(t+1)} = W^{(t)} - \eta \nabla_W \mathcal{L}
+\end{equation}
+
+\begin{equation}
+b^{(t+1)} = b^{(t)} - \eta \nabla_b \mathcal{L}
+\end{equation}
+
+
 
 \subsubsection{Multiclass SVM}
 For a binary problem with labels $t_j \in \{-1, +1\}$, a linear SVM predicts with $f(\mathbf x) = \mathbf w^\top\mathbf x + b$, where $\mathbf w$ are the weights and $b$ is the bias. It is trained by minimizing the L2-regularized hinge loss
@@ -190,7 +304,114 @@ For prediction, given a new input $x$, every tree produces a class prediction. T
 % results presented with clear figures/tables (2).
 % Always state the range of each hyperparameter tested and the best values.
 
-\subsubsection{Regression.} \todo{Effect of $\lambda_1$, $\lambda_2$, learning rate and iterations on the test MSE; learned coefficients (which features the Lasso sets to zero and why); comparison with LinearRegression.}
+\subsubsection{Elastic Net.} 
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_elasticnet_pvsa.png}
+    \caption{Elastic Net Predicted vs. Actual}
+    \label{fig:task2_elasticnet_pvsa.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_elasticnet_residual.png}
+    \caption{Elastic Net Residual}
+    \label{fig:task2_elasticnet_residual.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_elasticnet_featurecomp.png}
+    \caption{Elastic Net Feature Comparison}
+    \label{fig:task2_elasticnet_featurecomp.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_elasticnet_lr.png}
+    \caption{Elastic Net Learning Rate}
+    \label{fig:task2_elasticnet_lr.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_elasticnet_l1.png}
+    \caption{Elastic Net $L_1$ Ratio}
+    \label{fig:task2_elasticnet_l1.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_elasticnet_alpha.png}
+    \caption{Elastic Net Alpha}
+    \label{fig:task2_elasticnet_alpha.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_elasticnet_iterperform.png}
+    \caption{Elastic Net Iterations}
+    \label{fig:task2_elasticnet_iterperform.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_elasticnet_l2.png}
+    \caption{Elastic Net $L_2$ Ratio}
+    \label{fig:task2_elasticnet_l2.png}
+\end{figure}
+Fig.~\ref{fig:task2_elasticnet_pvsa.png}
+Fig.~\ref{fig:task2_elasticnet_featurecomp.png}
+Fig.~\ref{fig:task2_elasticnet_residual.png}
+Fig.~\ref{fig:task2_elasticnet_l1.png}
+Fig.~\ref{fig:task2_elasticnet_l2.png}
+Fig.~\ref{fig:task2_elasticnet_alpha.png}
+Fig.~\ref{fig:task2_elasticnet_iterperform.png}
+\todo{explain these figures}
+
+\subsubsection{Lasso.}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_lasso_pvsa.png}
+    \caption{Elastic Net Predicted vs. Actual}
+    \label{fig:task2_lasso_pvsa.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_lasso_residual.png}
+    \caption{Elastic Net Residual}
+    \label{fig:task2_lasso_residual.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_lasso_featurecomp.png}
+    \caption{Elastic Net Feature Comparison}
+    \label{fig:task2_lasso_featurecomp.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_lasso_lr.png}
+    \caption{Elastic Net Learning Rate}
+    \label{fig:task2_lasso_lr.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_lasso_l1.png}
+    \caption{Elastic Net $L_1$ Ratio}
+    \label{fig:task2_lasso_l1.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_lasso_alpha.png}
+    \caption{Elastic Net Alpha}
+    \label{fig:task2_lasso_alpha.png}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{task2_lasso_iterperform.png}
+    \caption{Elastic Net Iterations}
+    \label{fig:task2_lasso_iterperform.png}
+\end{figure}
+Fig.~\ref{fig:task2_lasso_pvsa.png}
+Fig.~\ref{fig:task2_lasso_featurecomp.png}
+Fig.~\ref{fig:task2_lasso_residual.png}
+Fig.~\ref{fig:task2_lasso_l1.png}
+Fig.~\ref{fig:task2_lasso_alpha.png}
+Fig.~\ref{fig:task2_lasso_iterperform.png}
+\todo{explain these figures}
 
 \subsubsection{Multiclass SVM}
 For tunning the SVM model, a grid search is performed for regularization parameter $\lambda$ and learning rate $\eta$, with the number of iterations set to a fixed value. The ranges of $\lambda$ and $\eta$ are shown in the $x$-axis of Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} and Fig.~\ref{fig:digits_svm_accuracy_vs_lr}. At each point in the grid, the performance is evaluated as the mean accuracy in a 5-fold cross-validation. This procedure is repeated for different numbers of iterations $n_{\text{iter}}$ until $n_{\text{iter}}$ is just large enough that the best performance plateaus. The gray vertical lines in Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} and Fig.~\ref{fig:digits_svm_accuracy_vs_lr} indicate the best hyperparameter values. The chosen values are
