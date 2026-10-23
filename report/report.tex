@@ -35,7 +35,7 @@
 % 100-150 words. Grid: summarizes the work (1) and the findings (1).
 % Name every model studied: ElasticNet, Lasso, LinearRegression, multiclass SVM, MLP, RandomForestClassifier,
 % and for Task 3 the Lasso, random forest and MLP regressors.
-\todo{One sentence on Tasks 1--2: datasets, models implemented from scratch with gradient descent, scikit-learn comparisons.}
+\todo{One sentence on Tasks 1--2: datasets, models implemented from scratch with gradient descent, scikit-learn comparisons.} A statistical analysis is first conducted on the Diabetes dataset for data processing, and then elastic net and lasso regression methods are implemented and compared to Scikit-learn's Linear Regression model. The custom Elastic Net model produced an MSE= 2773.64 and R2 = 0.4862, the Lasso model produced an  MSE = 2821.75 and R2 = 0.4773, while the Scikit Learn Linear Regression model produced MSE = 2821.75 and R2 = 0.4773, demonstrating similar results.
 \todo{One or two sentences with the main Task 1--2 results (test MSE, test accuracies).}
 In Task 3, we predict the next-day volatility-adjusted returns of S\&P~500 stocks with a Lasso, a random forest and a multilayer perceptron trained in a walk-forward procedure, under a protocol designed to prevent lookahead and test-set overfitting. On the 2011--2013 test period, the random forest and the multilayer perceptron reach Sharpe ratios of 3.65 and 3.01, but most of this performance depends on trading at the closing prices used to form the predictions.
 \end{abstract}
@@ -46,8 +46,9 @@ In Task 3, we predict the next-day volatility-adjusted returns of S\&P~500 stock
 % ==================================================================
 % Grid: clearly presents the goals, all methods and all datasets (2). Introduce variables and acronyms.
 \todo{Goal of the assignment and the three tasks.}
-\todo{Datasets: Diabetes (442 patients, 10 baseline variables, continuous disease-progression target) and Digits (1,797 $8\times8$ images, 64 pixel features, 10 classes).}
-\todo{Methods: ElasticNet and Lasso regression and a multiclass support vector machine (SVM) and multilayer perceptron (MLP) implemented from scratch with gradient descent; LinearRegression and RandomForestClassifier from scikit-learn~\cite{sklearn}.}
+The Diabetes dataset contains information on 442 patients and 10 baseline variables, with the target variable as a continuous disease-progression target one year after baseline. The goal is to implement elastic net and lasso regression models with gradient descent and analyze the choice of parameters. We demonstrate that selecting appropriate model parameters is important to improving accuracy.
+\todo{Digits (1,797 $8\times8$ images, 64 pixel features, 10 classes).}
+\todo{Methods: multiclass support vector machine (SVM) and multilayer perceptron (MLP) implemented from scratch with gradient descent; RandomForestClassifier from scikit-learn~\cite{sklearn}.}
 \todo{Most important findings of Tasks 1 and 2.}
 Task 3 uses daily returns of S\&P~500 constituents from 1980 to 2013 and social-media sentiment scores to predict which stocks will outperform the next day. We find genuine but small short-horizon predictability: nonlinear models outperform a linear model and simple trading rules on the test period, but their advantage largely disappears when trades are executed one day later.
 
@@ -364,7 +365,7 @@ For prediction, given a new input $x$, every tree produces a class prediction. T
     \caption{Elastic Net $L_2$ Ratio}
     \label{fig:task2_elasticnet_l2.png}
 \end{figure}
-The custom Elastic Net model produced an MSE= 2773.64 and R2 = 0.4862 while the Scikit Learn Linear Regression model produced MSE = 2821.75 and R2 = 0.4773. Fig.~\ref{fig:task2_elasticnet_pvsa.png} Shows the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
+The custom Elastic Net model produced an MSE= 2773.64 and R2 = 0.4862 while the Scikit Learn Linear Regression model produced MSE = 2821.75 and R2 = 0.4773, demonstrating similar results. Fig.~\ref{fig:task2_elasticnet_pvsa.png} Shows the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
 Fig.~\ref{fig:task2_elasticnet_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ and $L_2$ penalties were able to push certain coefficients toward zero and induce sparsity, reducing the influence of redundant or less useful features. Some coefficients remain relatively similar between the two models, indicated that those features are important in prediction. The $L_1$ and $L_2$ ratios are defined in the custom model as $\alpha \cdot L$ratio.
 Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, Fig.~\ref{fig:task2_elasticnet_alpha.png}, and Fig.~\ref{fig:task2_elasticnet_iterperform.png} show how the choice of parameters affect the model's performance.
 
@@ -741,22 +742,21 @@ Past returns contain genuine short-horizon information about relative stock retu
 % ==================================================================
 % Grid: summarizes findings (1) and suggests improvements (1).
 \todo{Key findings of Tasks 1 and 2: which scratch models matched scikit-learn, what the hyperparameter studies showed, and why.}
-\todo{Improvements for Tasks 1 and 2 (e.g. feature scaling, mini-batch or adaptive optimizers, kernel SVM, early stopping).}
+\todo{Improvements for Tasks 1 and 2 (e.g. feature scaling, mini-batch or adaptive optimizers, kernel SVM, early stopping).} The first regression task included a statistical analysis, determining that scaling would be beneficial for model implementation. For the second regression task, the classification models were evaluated by comparing their prediction accuracy with Scikit-learn implementation, demonstrating similar results. The hyperparameter studies demonstrate why selecting appropriate model parameters is important, as it influences prediction accuracy. Improvements could be made in the optimization algorithm, such as using mini batch gradient descent or Adam to improve computational efficiency and convergence.
 Across the assignment, \todo{one sentence linking the tasks}. In Task 3, the main lesson is that, with financial data, how a model is evaluated matters as much as which model is used: careful protocols against lookahead and repeated testing, and diagnostics such as delayed execution, changed how strong our results appeared.
 
 
 % ==================================================================
 \section{Statement of Contributions}
 % ==================================================================
-This assignment was broken down as follows: Jocelyn Poon worked on task 1, Ruiyong Xu worked on task 2 (both regression and classification), finally Louis Salanon and Maxime Robatche-Claive focused on task 3. All members were assigned to write their own report section based on their task, and everyone reviewed the full submission.
+This assignment was broken down as follows: Jocelyn Poon worked on the regression portion of task 1 and 2, Ruiyong Xu worked on the classification portion of task 1 and 2, finally Louis Salanon and Maxime Robatche-Claive focused on task 3. All members were assigned to write their own report section based on their task, and everyone reviewed the full submission.
 
 
 % ==================================================================
 \section{Statement on LLM Usage}
 \label{sec:llm}
 % ==================================================================
-\todo{LLM usage for Tasks 1 and 2 (tool, purpose: code, debugging, writing; how outputs were checked).}
-Our implementation of the MLP class is a revision of that output by Chat GPT-5, prompted by passing the given MLP Python class template and asking it to give a minimal implementation. For Task 3, we used Claude (Anthropic, model Claude Opus 5.5, chat interface) interactively to plan the division of work, to guide the inspection and cleaning of the data, and to suggest code for volatility adjustment and evaluation, which we ran, checked against controls and modified ourselves. The same assistant drafted the agent prompt and an initial version of the Task 3 text in this report, both of which we reviewed and edited. Experiments were then run with Claude Code (Opus 5.5 High from \texttt{/model} in Claude Code) inside our repository. Its context consisted of the repository, our exploration notebook and the written prompt, reproduced in the appendix of the submitted notebook together with a summary of the agent's log, which records its decisions and the questions it asked us. We reviewed the agent's output at each of its five checkpoints, made all commits ourselves, and approved the finalists before the test evaluation.
+Chat GPT was used in the regression task to help generate plots and verify the implementation of the models. Our implementation of the MLP class is a revision of that output by Chat GPT-5, prompted by passing the given MLP Python class template and asking it to give a minimal implementation. For Task 3, we used Claude (Anthropic, model Claude Opus 5.5, chat interface) interactively to plan the division of work, to guide the inspection and cleaning of the data, and to suggest code for volatility adjustment and evaluation, which we ran, checked against controls and modified ourselves. The same assistant drafted the agent prompt and an initial version of the Task 3 text in this report, both of which we reviewed and edited. Experiments were then run with Claude Code (Opus 5.5 High from \texttt{/model} in Claude Code) inside our repository. Its context consisted of the repository, our exploration notebook and the written prompt, reproduced in the appendix of the submitted notebook together with a summary of the agent's log, which records its decisions and the questions it asked us. We reviewed the agent's output at each of its five checkpoints, made all commits ourselves, and approved the finalists before the test evaluation.
 
 
 % ==================================================================
