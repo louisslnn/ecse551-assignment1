@@ -38,11 +38,10 @@ class LassoRegression():
         grad_b = np.mean(Y_prediction - self.Y)
 
         #gradient descent
-        self.W -= self.learning_rate * grad_W
+        W_temp = self.W - self.learning_rate * grad_W
+        self.W = self.soft_thresholding(
+        W_temp, self.learning_rate * self.l1_penalty)
         self.b -= self.learning_rate * grad_b
-        W_temp =self.W - self.learning_rate*grad_W
-        self.W = self.soft_thresholding(W_temp, self.learning_rate*self.l1_penalty)
-
         # calculate objective function
         residuals = self.Y - self.predict(self.X)
         mse_loss = np.sum(residuals ** 2) / (2 * self.m)
@@ -105,7 +104,7 @@ print("Custom iterations:", mymodel_n_iter)
 
 #Plotting
 sns.set_theme(style="whitegrid")
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(7, 4))
 plt.scatter(y_test, scratch_preds, alpha=0.5, label="Custom")
 plt.scatter( y_test, sklearn_preds, alpha=0.7, marker="x", label="Scikit Learn")
 limits = [min(y_test.min(), scratch_preds.min(), sklearn_preds.min()), max(y_test.max(), scratch_preds.max(), sklearn_preds.max())]
@@ -119,7 +118,7 @@ plt.show()
 
 scratch_residuals = y_test - scratch_preds
 sklearn_residuals = y_test - sklearn_preds
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(7, 4))
 plt.hist(scratch_residuals, bins=15, alpha=0.5, density=True, label="Custom")
 plt.hist(sklearn_residuals, bins=15, alpha=0.5, density=True, label="Scikit Learn")
 plt.axvline(0, color="black", linestyle="--")
@@ -132,8 +131,8 @@ plt.show()
 
 indices = np.arange(X.shape[1])
 width = 0.5
-plt.figure(figsize=(10, 6))
-plt.bar(indices - width / 2, mymodel.W, width,label="scratch")
+plt.figure(figsize=(7, 4))
+plt.bar(indices - width / 2, mymodel.W, width,label="Custom")
 plt.bar(indices + width / 2, sklearn_model.coef_, width,label="Scikit Learn")
 plt.axhline(0, color="black", linewidth=0.8)
 plt.title("Coefficient Comparison")
@@ -145,7 +144,7 @@ plt.tight_layout()
 plt.show()
 
 # objective vs iteration
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(7, 4))
 plt.semilogx(mymodel.loss_history)
 plt.xlabel("Iteration")
 plt.ylabel("Lasso objective")
@@ -202,7 +201,7 @@ for param_name, values in experiments.items():
     x = [r["value"] for r in results]
     mse = [r["mse"] for r in results]
     r2 = [r["r2"] for r in results]
-    fig, ax1 = plt.subplots(figsize=(8, 6))
+    fig, ax1 = plt.subplots(figsize=(7, 4))
     line1 = ax1.plot(x, mse, marker="o", label="Test MSE")
     ax1.set_xlabel(param_name)
     ax1.set_ylabel("Test MSE")
