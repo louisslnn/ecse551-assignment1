@@ -3,6 +3,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
+\usepackage{subcaption}
 \usepackage{booktabs}
 \usepackage{xcolor}
 \usepackage{cite}
@@ -35,9 +36,7 @@
 % 100-150 words. Grid: summarizes the work (1) and the findings (1).
 % Name every model studied: ElasticNet, Lasso, LinearRegression, multiclass SVM, MLP, RandomForestClassifier,
 % and for Task 3 the Lasso, random forest and MLP regressors.
-\todo{One sentence on Tasks 1--2: datasets, models implemented from scratch with gradient descent, scikit-learn comparisons.} A statistical analysis is first conducted on the Diabetes dataset for data processing, and then elastic net and lasso regression methods are implemented and compared to Scikit-learn's Linear Regression model. The custom Elastic Net model produced an MSE= 2773.64 and R2 = 0.4862, the Lasso model produced an  MSE = 2821.75 and R2 = 0.4773, while the Scikit Learn Linear Regression model produced MSE = 2821.75 and R2 = 0.4773, demonstrating similar results.
-\todo{One or two sentences with the main Task 1--2 results (test MSE, test accuracies).}
-In Task 3, we predict the next-day volatility-adjusted returns of S\&P~500 stocks with a Lasso, a random forest and a multilayer perceptron trained in a walk-forward procedure, under a protocol designed to prevent lookahead and test-set overfitting. On the 2011--2013 test period, the random forest and the multilayer perceptron reach Sharpe ratios of 3.65 and 3.01, but most of this performance depends on trading at the closing prices used to form the predictions.
+A statistical analysis is first conducted on the Diabetes dataset for data processing, and then elastic net and lasso regression methods are implemented and compared to Scikit-learn's Linear Regression model. For the classification of the Digits dataset, One-vs-Rest Multiclass SVM and 2-layer MLP methods are implemented, and compared to Scikit-learn's Random Forest model. The custom Elastic Net model produced an MSE = 2773.64 and $R^2 = 0.4862$, the Lasso model produced an MSE = 2774.43 and $R^2 = 0.4861$, while the Scikit Learn Linear Regression model produced MSE = 2821.75 and $R^2 = 0.4773$, demonstrating similar results. The custom SVM and MLP models achieved 94.83\% and 96.66\% accuracies, respectively, while the Scikit-learn Random Forest model achieved 95.63\% accuracy, also demonstrating similar results. In Task 3, we predict the next-day volatility-adjusted returns of S\&P~500 stocks with a Lasso, a random forest and a multilayer perceptron trained in a walk-forward procedure, under a protocol designed to prevent lookahead and test-set overfitting. On the 2011--2013 test period, the random forest and the multilayer perceptron reach Sharpe ratios of 3.65 and 3.01, but most of this performance depends on trading at the closing prices used to form the predictions.
 \end{abstract}
 
 
@@ -45,12 +44,7 @@ In Task 3, we predict the next-day volatility-adjusted returns of S\&P~500 stock
 \section{Introduction}
 % ==================================================================
 % Grid: clearly presents the goals, all methods and all datasets (2). Introduce variables and acronyms.
-\todo{Goal of the assignment and the three tasks.}
-The Diabetes dataset contains information on 442 patients and 10 baseline variables, with the target variable as a continuous disease-progression target one year after baseline. The goal is to implement elastic net and lasso regression models with gradient descent and analyze the choice of parameters. We demonstrate that selecting appropriate model parameters is important to improving accuracy.
-\todo{Digits (1,797 $8\times8$ images, 64 pixel features, 10 classes).}
-\todo{Methods: multiclass support vector machine (SVM) and multilayer perceptron (MLP) implemented from scratch with gradient descent; RandomForestClassifier from scikit-learn~\cite{sklearn}.}
-\todo{Most important findings of Tasks 1 and 2.}
-Task 3 uses daily returns of S\&P~500 constituents from 1980 to 2013 and social-media sentiment scores to predict which stocks will outperform the next day. We find genuine but small short-horizon predictability: nonlinear models outperform a linear model and simple trading rules on the test period, but their advantage largely disappears when trades are executed one day later.
+The goal of this assignment is to perform exploratory data analysis and preprocessing (Task 1), implement and tune regression and classification models from scratch to compare against Scikit-learn baselines (Task 2), and predict next-day stock returns under a strict walk-forward evaluation protocol (Task 3). The Diabetes dataset contains information on 442 patients and 10 baseline variables, with the target variable as a continuous disease-progression target one year after baseline. We implement custom elastic net and lasso regression models with gradient descent and analyze the choice of parameters, and comparing them to Scikit-learn's Linear Regression model~\cite{sklearn}. For classification, we analyze the Digits dataset, which consists of 1797 $8\times 8$ grayscale images represented as 64 pixel features across 10 digit classes (0--9). We implement a One-vs-Rest multiclass support vector machine (SVM) and a two-layer multilayer perceptron (MLP) from scratch using gradient descent, comparing them to Scikit-learn's Random Forest Classifier~\cite{sklearn}. In Tasks 1 and 2, we find that feature scaling is essential for regularized gradient-based optimization, and that our custom Elastic Net, Lasso, SVM, and MLP models closely match or slightly outperform the Scikit-learn baselines when properly tuned. Task 3 uses daily returns of S\&P~500 constituents from 1980 to 2013 and social-media sentiment scores to predict which stocks will outperform the next day. We find genuine but small short-horizon predictability: nonlinear models outperform a linear model and simple trading rules on the test period, but their advantage largely disappears when trades are executed one day later.
 
 
 % ==================================================================
@@ -61,7 +55,7 @@ Task 3 uses daily returns of S\&P~500 constituents from 1980 to 2013 and social-
 \subsection{Datasets}
 % Grid: data cleaning and preprocessing steps clearly described (2).
 \subsubsection{Diabetes}
-The Diabetes dataset contains information about 442 patients and 10 real-valued baseline variables. The target variable measures disease progression one year after baseline. For preprocessing, it is determined that there are no missing features or values nor are there erraneous values to be cleaned. Comparing the original (Fig. ~\ref{fig:task1_regression_distributions_unscaled}) and scaled distributions (Fig. ~\ref{fig:task1_regression_distributions}) demonstrates that scaling centers the features around zero and makes their magnitudes more comparable. This is important for gradient based optimization and regularized regression, because features with different scales can negatively influence the regularization penalties. Fig. ~\ref{fig:task1_regression_boxplot} shows that outliers are present in most of the features, however, are not necessary to clean because medical variations exist and reflect diversities in human health.
+The Diabetes dataset contains information about 442 patients and 10 real-valued baseline variables. The target variable measures disease progression one year after baseline. For preprocessing, it is determined that there are no missing features or values nor are there erroneous values to be cleaned. Comparing the original (Fig. ~\ref{fig:task1_regression_distributions_unscaled}) and scaled distributions (Fig. ~\ref{fig:task1_regression_distributions}) demonstrates that scaling centers the features around zero and makes their magnitudes more comparable. This is important for gradient based optimization and regularized regression, because features with different scales can negatively influence the regularization penalties. Fig. ~\ref{fig:task1_regression_boxplot} shows that outliers are present in most of the features, however, are not necessary to clean because medical variations exist and reflect diversities in human health.
 \begin{figure}
     \centering
     \safefig{task1_regression_distributions_unscaled.png}
@@ -69,7 +63,7 @@ The Diabetes dataset contains information about 442 patients and 10 real-valued 
     \label{fig:task1_regression_distributions_unscaled}
 \end{figure}
 \subsubsection{Digits}
-The Digits data set consists of 1797 8x8 images of handwritten single digits labeled with the digits, so there are 64 features (one pixel each) and 10 labels (0--9). Each feature is an integer between 0 and 16 (inclusive) that indicates the grayscale intensity of a pixels. The data set is linted to check for any missing or out-of-range feature values or label values, and none is found. As shown by Fig.~\ref{fig:digits_pixel_intensity_distribution}, the pixel intensity spreads across the entire range and concentrates at the minimum and the maximum. The distribution of the total amount of ink in a digit image, as defined by the sum of pixel intensities, is shown in Fig.~\ref{fig:digits_ink_amount_distribution}. It approximates a bell curve and there is no notable abnormality.
+The Digits data set consists of 1797 $8\times 8$ images of handwritten single digits labeled with the digits, so there are 64 features (one pixel each) and 10 labels (0--9). Each feature is an integer between 0 and 16 (inclusive) that indicates the grayscale intensity of a pixel. The data set is linted to check for any missing or out-of-range feature values or label values, and none are found. As shown by Fig.~\ref{fig:digits_pixel_intensity_distribution}, the pixel intensity spreads across the entire range and concentrates at the minimum and the maximum. The distribution of the total amount of ink in a digit image, as defined by the sum of pixel intensities, is shown in Fig.~\ref{fig:digits_ink_amount_distribution}. It approximates a bell curve and there is no notable abnormality.
 
 \begin{figure}[t]
 \centering
@@ -81,7 +75,7 @@ The Digits data set consists of 1797 8x8 images of handwritten single digits lab
 \begin{figure}[t]
 \centering
 \safefig[0.9]{digits_ink_amount_distribution.png}
-\caption{Distrbution of the total amount of ink in a digit image}
+\caption{Distribution of the total amount of ink in a digit image}
 \label{fig:digits_ink_amount_distribution}
 \end{figure}
 
@@ -149,16 +143,17 @@ Fig.~\ref{fig:digits_class_sizes} shows the sample sizes of different digits, de
 
 \begin{figure}[t]
 \centering
-\safefig[0.6]{digits_mean_image.png}
-\caption{Mean image of digits}
+\begin{subfigure}[t]{0.45\columnwidth}
+\safefig{digits_mean_image.png}
+\caption{Mean image}
 \label{fig:digits_mean_image}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\safefig[0.6]{digits_image_variance.png}
-\caption{Heat map of pixel intensity variance of digits}
+\end{subfigure}
+\begin{subfigure}[t]{0.45\columnwidth}
+\safefig{digits_image_variance.png}
+\caption{Variance of image}
 \label{fig:digits_image_variance}
+\end{subfigure}
+\caption{Heatmaps of the pixel intensity mean and variance of digits}
 \end{figure}
 
 
@@ -173,7 +168,7 @@ Fig.~\ref{fig:digits_class_sizes} shows the sample sizes of different digits, de
 % metrics MSE and accuracy mentioned (0.5) and explained (1), description of model training (1).
 % Also: define hyperparameters, state the 70/30 split with random state 42, and how hyperparameters were tuned.
 
-\textit{Evaluation.} The hyperparameters of the Elastic Net and Lasso models were tuned using a one at a time, where each hyperparameter was varied independently while the remaining parameters were held constant at their baseline values. For both the regression task and the classification task, the data sets are split using a train/test split of 70\% / 30\% and a random state of 42. MSE measures the average of the squared differences between predicted values and true vales, given as:
+\textit{Evaluation.} The hyperparameters of the Elastic Net and Lasso models were tuned using a one at a time, where each hyperparameter was varied independently while the remaining parameters were held constant at their baseline values. For both the regression task and the classification task, the data sets are split using a train/test split of 70\% / 30\% and a random state of 42. MSE measures the average of the squared differences between predicted values and true values, given as:
 
 \begin{equation}
     \mathrm{MSE} = \frac{1}{n}\sum_{i=1}^{n}(y_i-\hat{y}_i)^2
@@ -206,10 +201,10 @@ For gradient descent, the weight and bias updates are as follows:
 b^{(t+1)} = b^{(t)} - \eta \frac{1}{N}
 \sum_{i=1}^{N}(\hat{y}_i-y_i)
 \end{equation}
-where: $\lambda_1$ controls the strength of the $L_1$ penalty (sparsity and feature selection) and $\lambda_2$ controls the strength of the $L_2$ penalty (shrinking and correlated weights together).
+where $\lambda_1$ controls the strength of the $L_1$ penalty (sparsity and feature selection) and $\lambda_2$ controls the strength of the $L_2$ penalty (shrinking and correlated weights together).
 
 \subsubsection{Lasso Regression with Soft Thresholding}
-The Lasso is the special case $\lambda_2 = 0$. Lass minimizes
+The Lasso is the special case $\lambda_2 = 0$. Lasso minimizes
 \begin{equation}
 \mathcal{L}(W, b) = \frac{1}{2m} \sum_{i=1}^{m} \left( \hat{y}^{(i)} - y^{(i)} \right)^2 + \lambda_1 \sum_{j=1}^{n} |w_j|
 \end{equation}
@@ -230,12 +225,12 @@ W^{(t+1)} = \mathcal{S}\left(W_{\text{temp}}, \eta \lambda_1\right)
 \begin{equation}
 \mathcal{S}(x, \gamma) = \text{sign}(x) \cdot \max(|x| - \gamma, 0)
 \end{equation}
-with $\gamma = \eta \cdot \lambda_1$ which is the threshold value
+with $\gamma = \eta \cdot \lambda_1$ which is the threshold value.
 \begin{equation}
 b^{(t+1)} = b^{(t)} - \eta \nabla_b\mathcal{L}_{OLS}
 \end{equation}
 \subsubsection{Linear Regression}
-Scikit-learn's Linear Regression uses Ordinary least squares:
+Scikit-learn's Linear Regression uses ordinary least squares:
 \begin{equation}
 \mathcal{L}(W,b) = \frac{1}{2m}
 \sum_{i=1}^{m}
@@ -365,9 +360,9 @@ For prediction, given a new input $x$, every tree produces a class prediction. T
     \caption{Elastic Net $L_2$ Ratio}
     \label{fig:task2_elasticnet_l2.png}
 \end{figure}
-The custom Elastic Net model produced an MSE= 2773.64 and R2 = 0.4862 while the Scikit Learn Linear Regression model produced MSE = 2821.75 and R2 = 0.4773, demonstrating similar results. Fig.~\ref{fig:task2_elasticnet_pvsa.png} Shows the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
-Fig.~\ref{fig:task2_elasticnet_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ and $L_2$ penalties were able to push certain coefficients toward zero and induce sparsity, reducing the influence of redundant or less useful features. Some coefficients remain relatively similar between the two models, indicated that those features are important in prediction. The $L_1$ and $L_2$ ratios are defined in the custom model as $\alpha \cdot L$ratio.
-Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, Fig.~\ref{fig:task2_elasticnet_alpha.png}, and Fig.~\ref{fig:task2_elasticnet_iterperform.png} show how the choice of parameters affect the model's performance.
+The custom Elastic Net model produced an MSE= 2773.64 and $R^2 = 0.4862$ while the Scikit Learn Linear Regression model produced MSE = 2821.75 and $R^2 = 0.4773$, demonstrating similar results. Fig.~\ref{fig:task2_elasticnet_pvsa.png} shows the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
+Fig.~\ref{fig:task2_elasticnet_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ and $L_2$ penalties were able to push certain coefficients toward zero and induce sparsity, reducing the influence of redundant or less useful features. Some coefficients remain relatively similar between the two models, indicating that those features are important in prediction. The $L_1$ and $L_2$ ratios are defined in the custom model as $\alpha \cdot L$ratio.
+Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, Fig.~\ref{fig:task2_elasticnet_alpha.png}, and Fig.~\ref{fig:task2_elasticnet_iterperform.png} show how the choice of parameters affects the model's performance.
 
 \begin{table}[htbp]
     \centering
@@ -394,54 +389,48 @@ Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, 
 \begin{figure}
     \centering
     \safefig{task2_lasso_pvsa.png}
-    \caption{Elastic Net Predicted vs. Actual}
+    \caption{Lasso Predicted vs. Actual}
     \label{fig:task2_lasso_pvsa.png}
 \end{figure}
 \begin{figure}
     \centering
     \safefig{task2_lasso_residual.png}
-    \caption{Elastic Net Residual}
+    \caption{Lasso Residual}
     \label{fig:task2_lasso_residual.png}
 \end{figure}
 \begin{figure}
     \centering
     \safefig{task2_lasso_featurecomp.png}
-    \caption{Elastic Net Feature Comparison}
+    \caption{Lasso Feature Comparison}
     \label{fig:task2_lasso_featurecomp.png}
 \end{figure}
 \begin{figure}
     \centering
     \safefig{task2_lasso_lr.png}
-    \caption{Elastic Net Learning Rate}
+    \caption{Lasso Learning Rate}
     \label{fig:task2_lasso_lr.png}
 \end{figure}
 \begin{figure}
     \centering
     \safefig{task2_lasso_l1.png}
-    \caption{Elastic Net $L_1$ Ratio}
+    \caption{Lasso $L_1$ Ratio}
     \label{fig:task2_lasso_l1.png}
 \end{figure}
 \begin{figure}
     \centering
     \safefig{task2_lasso_alpha.png}
-    \caption{Elastic Net Alpha}
+    \caption{Lasso Alpha}
     \label{fig:task2_lasso_alpha.png}
 \end{figure}
 \begin{figure}
     \centering
     \safefig{task2_lasso_iterperform.png}
-    \caption{Elastic Net Iterations}
+    \caption{Lasso Iterations}
     \label{fig:task2_lasso_iterperform.png}
 \end{figure}
-Fig.~\ref{fig:task2_lasso_pvsa.png}
-Fig.~\ref{fig:task2_lasso_featurecomp.png}
-Fig.~\ref{fig:task2_lasso_residual.png}
-Fig.~\ref{fig:task2_lasso_l1.png}
-Fig.~\ref{fig:task2_lasso_alpha.png}
-Fig.~\ref{fig:task2_lasso_iterperform.png}
-The custom Lasso model produced an MSE= 2774.43 and R2 = 0.4861 while the Scikit Learn Linear Regression model produced MSE = 2821.75 and R2 = 0.4773. Fig.~\ref{fig:task2_lasso_pvsa.png} examines the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Like the elastic net analysis, both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
-Fig.~\ref{fig:task2_elasticnet_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ penalty was able to push certain coefficients toward zero, reducing the influence of redundant or less useful features. Again, some coefficients remain relatively similar between the two models, indicated that those features are important in prediction.
-Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, Fig.~\ref{fig:task2_elasticnet_alpha.png}, and Fig.~\ref{fig:task2_elasticnet_iterperform.png} show how the choice of parameters affect the model's performance.
+The custom Lasso model produced an MSE= 2774.43 and $R^2 = 0.4861$ while the Scikit Learn Linear Regression model produced MSE = 2821.75 and $R^2 = 0.4773$. Fig.~\ref{fig:task2_lasso_pvsa.png} examines the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Like the elastic net analysis, both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
+Fig.~\ref{fig:task2_lasso_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ penalty was able to push certain coefficients toward zero, reducing the influence of redundant or less useful features. Again, some coefficients remain relatively similar between the two models, indicating that those features are important in prediction.
+Fig.~\ref{fig:task2_lasso_l1.png}, Fig.~\ref{fig:task2_lasso_alpha.png}, and Fig.~\ref{fig:task2_lasso_iterperform.png} show how the choice of parameters affects the model's performance.
 \begin{table}[htbp]
     \centering
     \caption{Lasso Hyperparameter Optimization Results}
@@ -464,15 +453,13 @@ Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, 
 \subsubsection{Multiclass SVM}
 For tunning the SVM model, a grid search is performed for regularization parameter $\lambda$ and learning rate $\eta$, with the number of iterations set to a fixed value. The ranges of $\lambda$ and $\eta$ are shown in the $x$-axis of Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} and Fig.~\ref{fig:digits_svm_accuracy_vs_lr}. At each point in the grid, the performance is evaluated as the mean accuracy in a 5-fold cross-validation. This procedure is repeated for different numbers of iterations $n_{\text{iter}}$ until $n_{\text{iter}}$ is just large enough that the best performance plateaus. The gray vertical lines in Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} and Fig.~\ref{fig:digits_svm_accuracy_vs_lr} indicate the best hyperparameter values. The chosen values are
 \[
-\lambda = 10^{-4},\qquad
-\eta = 0.01,\qquad
-n_{\text{iter}} = 400
+\lambda = 10^{-4},\qquad\eta = 0.01,\qquad n_{\text{iter}} = 400
 \]
 With these hyperparameters, the accuracy on the test set is $94.83\%$.
 
-Increasing $\lambda$ results in underfitting while decreasing it results in overfitting, both degrades accuracy on unseen data, as Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} shows. If the learning rate is large, the gradient descent will overshoot, and if it is small then the point of convergence cannot be reached in a fixed number of iterations, both reducing the performance, as Fig.~\ref{fig:digits_svm_accuracy_vs_lr} shows.
+Increasing $\lambda$ results in underfitting while decreasing it results in overfitting, both degrading accuracy on unseen data, as Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} shows. If the learning rate is large, the gradient descent will overshoot, and if it is small then the point of convergence cannot be reached in a fixed number of iterations, both reducing the performance, as Fig.~\ref{fig:digits_svm_accuracy_vs_lr} shows.
 
-Since the data has 64 features, order to plot the decision boundary, the dimension must be reduced. We do it by using PCA to project the data points to 2-D. We then train a SVM model on the 2-D data set, using grid search to tune the hyperparameters. The result is plotted in Fig.~\ref{fig:digits_svm_decision_boundaries}. Each scattered point is a sample while the regions of different colors are decision regions. The cross-validation accuracy on this data set is only $56.43\%$, apparently due to the loss of important information about features in the projection.
+Since the data has 64 features, in order to plot the decision boundary, the dimension must be reduced. We do it by using PCA to project the data points to 2-D. We then train a SVM model on the 2-D data set, using grid search to tune the hyperparameters. The result is plotted in Fig.~\ref{fig:digits_svm_decision_boundaries}. Each scattered point is a sample while the regions of different colors are decision regions. The cross-validation accuracy on this data set is only $56.43\%$, apparently due to the loss of important information about features in the projection.
 \begin{figure}[t]
 \centering
 \safefig[0.75]{digits_svm_accuracy_vs_lambda.png}
@@ -495,7 +482,7 @@ Since the data has 64 features, order to plot the decision boundary, the dimensi
 \end{figure}
 
 \subsubsection{Multilayer Perceptron}
-For tunning the MLP model, a grid search is performed for hidden layer size $n_1$ and learning rate $\eta$, with epochs set to a fixed value. The ranges of $n_1$ and $\eta$ are shown in the $x$-axis of Fig.~\ref{fig:digits_mlp_accuracy_vs_hidden_size} and Fig.~\ref{fig:digits_mlp_accuracy_vs_lr}. At each point in the grid, the performance is evaluated as the mean accuracy in a 5-fold cross-validation. This procedure is repeated for different values of epochs until the number of epochs is just large enough that the best performance plateaus. The gray vertical lines in Fig.~\ref{fig:digits_mlp_accuracy_vs_hidden_size} and Fig.~\ref{fig:digits_mlp_accuracy_vs_lr} indicate the best hyperparameter values. The chosen values are
+For tuning the MLP model, a grid search is performed for hidden layer size $n_1$ and learning rate $\eta$, with epochs set to a fixed value. The ranges of $n_1$ and $\eta$ are shown in the $x$-axis of Fig.~\ref{fig:digits_mlp_accuracy_vs_hidden_size} and Fig.~\ref{fig:digits_mlp_accuracy_vs_lr}. At each point in the grid, the performance is evaluated as the mean accuracy in a 5-fold cross-validation. This procedure is repeated for different values of epochs until the number of epochs is just large enough that the best performance plateaus. The gray vertical lines in Fig.~\ref{fig:digits_mlp_accuracy_vs_hidden_size} and Fig.~\ref{fig:digits_mlp_accuracy_vs_lr} indicate the best hyperparameter values. The chosen values are
 \[
 n_1 = 96,\qquad
 \eta = 10^{-1.5},\qquad
@@ -503,7 +490,7 @@ n_1 = 96,\qquad
 \]
 With these hyperparameters, the accuracy on the test set is $96.66\%$.
 
-A small hidden layer size results in underfitting while a large hidden layer size results in overfitting, both reduces the accuracy on unseen data, as shown in Fig.~\ref{fig:digits_mlp_accuracy_vs_hidden_size}. If the learning rate is large, the gradient descent will overshoot, and if it is small then the point of convergence cannot be reached in a fixed number of iterations, both reducing the performance, as Fig.~\ref{fig:digits_mlp_accuracy_vs_lr} shows. For a given learning rate, if the number of epochs is too small, the model will be far from the point of convergence and thus perform worse, as Fig.~\ref{fig:digits_mlp_accuracy_vs_epochs}. As the number of epochs increase, the performance plateaus, while the training time increase, as shown in Fig.~\ref{fig:digits_mlp_fit_time_vs_epochs}.
+A small hidden layer size results in underfitting while a large hidden layer size results in overfitting, both reducing the accuracy on unseen data, as shown in Fig.~\ref{fig:digits_mlp_accuracy_vs_hidden_size}. If the learning rate is large, the gradient descent will overshoot, and if it is small then the point of convergence cannot be reached in a fixed number of iterations, both reducing the performance, as Fig.~\ref{fig:digits_mlp_accuracy_vs_lr} shows. For a given learning rate, if the number of epochs is too small, the model will be far from the point of convergence and thus perform worse, as shown in Fig.~\ref{fig:digits_mlp_accuracy_vs_epochs}. As the number of epochs increases, the performance plateaus, while the training time increases, as shown in Fig.~\ref{fig:digits_mlp_fit_time_vs_epochs}.
 
 \begin{figure}[t]
 \centering
@@ -552,7 +539,7 @@ Model & Hyperparameters & Accuracy \\
 \midrule
 Multiclass SVM & $\lambda = 10^{-4}, \eta = 0.01, n_{\text{iter}} = 400$ & 94.83\% \\
 MLP & $n_1 = 96, \eta = 10^{-1.5}, \text{epochs} = 400$ & 96.66\% \\
-Random Forest & $\text{\#estimators} = 75, \text{\#max depth} = 10$ & 95.63\% \\
+Random Forest & $\text{\#estimators} = 75, \text{max depth} = 10$ & 95.63\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -581,7 +568,8 @@ with $\beta_1 = 0.97$ (a variance half-life of about 23 days), $\beta_2 = 0.99$ 
 
 \begin{figure}[t]
 \centering
-\safefig{fig_t3_voladj.pdf}
+%\safefig{fig_t3_voladj.pdf}
+\includegraphics[width=\columnwidth]{../results/task3_compact/figures/figure-2.png}
 \caption{Cross-sectional standard deviation of member returns (63-day average) before (top) and after (bottom) volatility adjustment.}
 \label{fig:t3_voladj}
 \end{figure}
@@ -702,7 +690,8 @@ Smoothed MLP   & 0.35--2.0    & 1.40 & 1.84 & 4.51  & 0.40 \\
 
 \begin{figure}[t]
 \centering
-\safefig{fig_t3_test.pdf}
+%\safefig{fig_t3_test.pdf}
+\includegraphics[width=\columnwidth]{../results/task3_compact/figures/figure-4.png}
 \caption{Test period (2011--2013): cumulative P\&L, each series divided by its own daily standard deviation so slopes are comparable (top), and cumulative daily rank correlation (bottom), for the finalists and baselines.}
 \label{fig:t3_test}
 \end{figure}
@@ -741,9 +730,7 @@ Past returns contain genuine short-horizon information about relative stock retu
 \label{sec:conclusion}
 % ==================================================================
 % Grid: summarizes findings (1) and suggests improvements (1).
-\todo{Key findings of Tasks 1 and 2: which scratch models matched scikit-learn, what the hyperparameter studies showed, and why.}
-\todo{Improvements for Tasks 1 and 2 (e.g. feature scaling, mini-batch or adaptive optimizers, kernel SVM, early stopping).} The first regression task included a statistical analysis, determining that scaling would be beneficial for model implementation. For the second regression task, the classification models were evaluated by comparing their prediction accuracy with Scikit-learn implementation, demonstrating similar results. The hyperparameter studies demonstrate why selecting appropriate model parameters is important, as it influences prediction accuracy. Improvements could be made in the optimization algorithm, such as using mini batch gradient descent or Adam to improve computational efficiency and convergence.
-Across the assignment, \todo{one sentence linking the tasks}. In Task 3, the main lesson is that, with financial data, how a model is evaluated matters as much as which model is used: careful protocols against lookahead and repeated testing, and diagnostics such as delayed execution, changed how strong our results appeared.
+The first regression task included a statistical analysis, determining that scaling would be beneficial for model implementation. For the classification task, the classification models were evaluated by comparing their prediction accuracy with Scikit-learn implementation, demonstrating similar results (94.83\% and 96.66\% vs. 95.63\%). The hyperparameter studies demonstrate why selecting appropriate model parameters is important, as balancing regularization strength, model capacity, and learning rate prevents underfitting, overfitting, and gradient overshooting. Improvements could be made in the optimization algorithm, such as using mini batch gradient descent or Adam to improve computational efficiency and convergence, incorporating early-stopping, or using non-linear kernel SVM. Across the assignment, proper data preprocessing, regularization, and disciplined hyperparameter tuning consistently proved more critical to generalization than model complexity alone. In Task 3, the main lesson is that, with financial data, how a model is evaluated matters as much as which model is used: careful protocols against lookahead and repeated testing, and diagnostics such as delayed execution, changed how strong our results appeared.
 
 
 % ==================================================================
@@ -756,16 +743,16 @@ This assignment was broken down as follows: Jocelyn Poon worked on the regressio
 \section{Statement on LLM Usage}
 \label{sec:llm}
 % ==================================================================
-Chat GPT was used in the regression task to help generate plots and verify the implementation of the models. Our implementation of the MLP class is a revision of that output by Chat GPT-5, prompted by passing the given MLP Python class template and asking it to give a minimal implementation. For Task 3, we used Claude (Anthropic, model Claude Opus 5.5, chat interface) interactively to plan the division of work, to guide the inspection and cleaning of the data, and to suggest code for volatility adjustment and evaluation, which we ran, checked against controls and modified ourselves. The same assistant drafted the agent prompt and an initial version of the Task 3 text in this report, both of which we reviewed and edited. Experiments were then run with Claude Code (Opus 5.5 High from \texttt{/model} in Claude Code) inside our repository. Its context consisted of the repository, our exploration notebook and the written prompt, reproduced in the appendix of the submitted notebook together with a summary of the agent's log, which records its decisions and the questions it asked us. We reviewed the agent's output at each of its five checkpoints, made all commits ourselves, and approved the finalists before the test evaluation.
+Chat GPT was used in the regression task to help generate plots and verify the implementation of the models. Our implementation of the MLP class referenced the code output by ChatGPT, prompted by passing the given MLP Python class template and asking it to give a minimal implementation. For Task 3, we used Claude (Anthropic, model Claude Opus 5.5, chat interface) interactively to plan the division of work, to guide the inspection and cleaning of the data, and to suggest code for volatility adjustment and evaluation, which we ran, checked against controls and modified ourselves. The same assistant drafted the agent prompt and an initial version of the Task 3 text in this report, both of which we reviewed and edited. Experiments were then run with Claude Code (Opus 5.5 High from \texttt{/model} in Claude Code) inside our repository. Its context consisted of the repository, our exploration notebook and the written prompt, reproduced in the appendix of the submitted notebook together with a summary of the agent's log, which records its decisions and the questions it asked us. We reviewed the agent's output at each of its five checkpoints, made all commits ourselves, and approved the finalists before the test evaluation.
 
 
 % ==================================================================
 \begin{thebibliography}{9}
 \bibitem{sklearn} F. Pedregosa \emph{et al.}, ``Scikit-learn: Machine learning in Python,'' \emph{J. Mach. Learn. Res.}, vol. 12, pp. 2825--2830, 2011.
 \bibitem{tibshirani1996} R. Tibshirani, ``Regression shrinkage and selection via the lasso,'' \emph{J. Roy. Stat. Soc. B}, vol. 58, no. 1, pp. 267--288, 1996.
-\bibitem{zou2005} H. Zou and T. Hastie, ``Regularization and variable selection via the elastic net,'' \emph{J. Roy. Stat. Soc. B}, vol. 67, no. 2, pp. 301--320, 2005.
-\bibitem{cortes1995} C. Cortes and V. Vapnik, ``Support-vector networks,'' \emph{Mach. Learn.}, vol. 20, no. 3, pp. 273--297, 1995.
-\bibitem{breiman2001} L. Breiman, ``Random forests,'' \emph{Mach. Learn.}, vol. 45, no. 1, pp. 5--32, 2001.
+%\bibitem{zou2005} H. Zou and T. Hastie, ``Regularization and variable selection via the elastic net,'' \emph{J. Roy. Stat. Soc. B}, vol. 67, no. 2, pp. 301--320, 2005.
+%\bibitem{cortes1995} C. Cortes and V. Vapnik, ``Support-vector networks,'' \emph{Mach. Learn.}, vol. 20, no. 3, pp. 273--297, 1995.
+%\bibitem{breiman2001} L. Breiman, ``Random forests,'' \emph{Mach. Learn.}, vol. 45, no. 1, pp. 5--32, 2001.
 \bibitem{claudecode} Anthropic, ``Claude Code,'' 2026. [Online]. Available: \url{https://docs.claude.com}
 \end{thebibliography}
 
