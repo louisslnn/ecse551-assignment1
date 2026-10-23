@@ -72,7 +72,7 @@ The Digits data set consists of 1797 8x8 images of handwritten single digits lab
 
 \begin{figure}[t]
 \centering
-\safefig[0.9]{digits_pixel_intensity_distribution.png}
+\safefig[0.8]{digits_pixel_intensity_distribution.png}
 \caption{Pixel intensity distribution in digits}
 \label{fig:digits_pixel_intensity_distribution}
 \end{figure}
@@ -474,21 +474,21 @@ Increasing $\lambda$ results in underfitting while decreasing it results in over
 Since the data has 64 features, order to plot the decision boundary, the dimension must be reduced. We do it by using PCA to project the data points to 2-D. We then train a SVM model on the 2-D data set, using grid search to tune the hyperparameters. The result is plotted in Fig.~\ref{fig:digits_svm_decision_boundaries}. Each scattered point is a sample while the regions of different colors are decision regions. The cross-validation accuracy on this data set is only $56.43\%$, apparently due to the loss of important information about features in the projection.
 \begin{figure}[t]
 \centering
-\safefig[0.8]{digits_svm_accuracy_vs_lambda.png}
+\safefig[0.75]{digits_svm_accuracy_vs_lambda.png}
 \caption{SVM cross-validation accuracy vs. $\lambda$}
 \label{fig:digits_svm_accuracy_vs_lambda}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\safefig[0.8]{digits_svm_accuracy_vs_lr.png}
+\safefig[0.75]{digits_svm_accuracy_vs_lr.png}
 \caption{SVM cross-validation accuracy vs. $\eta$}
 \label{fig:digits_svm_accuracy_vs_lr}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\safefig[0.9]{digits_svm_decision_boundaries.png}
+\safefig[0.85]{digits_svm_decision_boundaries.png}
 \caption{SVM decision boundaries on 2-D PCA projection}
 \label{fig:digits_svm_decision_boundaries}
 \end{figure}
@@ -506,53 +506,38 @@ A small hidden layer size results in underfitting while a large hidden layer siz
 
 \begin{figure}[t]
 \centering
-\safefig[0.8]{digits_mlp_accuracy_vs_hidden_size.png}
+\safefig[0.75]{digits_mlp_accuracy_vs_hidden_size.png}
 \caption{MLP cross-validation accuracy vs. hidden layer size}
 \label{fig:digits_mlp_accuracy_vs_hidden_size}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\safefig[0.8]{digits_mlp_accuracy_vs_lr.png}
+\safefig[0.75]{digits_mlp_accuracy_vs_lr.png}
 \caption{MLP cross-validation accuracy vs. $\eta$}
 \label{fig:digits_mlp_accuracy_vs_lr}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\safefig[0.8]{digits_mlp_accuracy_vs_epochs.png}
+\safefig[0.75]{digits_mlp_accuracy_vs_epochs.png}
 \caption{MLP cross-validation accuracy vs. epochs}
 \label{fig:digits_mlp_accuracy_vs_epochs}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\safefig[0.8]{digits_mlp_fit_time_vs_epochs.png}
+\safefig[0.75]{digits_mlp_fit_time_vs_epochs.png}
 \caption{MLP training time during cross-validation vs. epochs}
 \label{fig:digits_mlp_fit_time_vs_epochs}
 \end{figure}
 
 \subsubsection{Random Forest}
-For tunning the Random Forest classifier, a grid search is performed for different numbers of estimators and different maximum depths. The ranges of the number of estimators and the maximum depth are shown in the $x$-axis of Fig.~\ref{fig:digits_rf_accuracy_vs_n_estimators} and Fig.~\ref{fig:digits_rf_accuracy_vs_max_depth}. At each point in the grid, the performance is evaluated as the mean accuracy in a 5-fold cross-validation. The best values are:
+For tunning the Random Forest classifier, a grid search is performed for different numbers of estimators and different maximum depths. The range of the number of estimators searched is $\{50, 75, 100, 125, 150\}$, and the range of the maximum depth is $\{5, 10, 15, 20, 25\}$. The performance is evaluated as the mean accuracy in a 5-fold cross-validation. The best values are:
 \[
-\text{\#estimators} = 75,\qquad
-\text{maximum depth} = 10
+\text{\#estimators} = 75,\qquad\text{maximum depth} = 10
 \]
-In Fig.~\ref{fig:digits_rf_accuracy_vs_n_estimators} and Fig.~\ref{fig:digits_rf_accuracy_vs_n_estimators}, the gray vertical lines mark the chosen parameter values, and we can see from the plot that the combination is a local optimum. The best accuracy achieved is $95.63\%$.
-
-\begin{figure}[t]
-\centering
-\safefig[0.8]{digits_rf_accuracy_vs_n_estimators.png}
-\caption{Random Forest cross-validation accuracy vs number of estimators}
-\label{fig:digits_rf_accuracy_vs_n_estimators}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\safefig[0.8]{digits_rf_accuracy_vs_max_depth.png}
-\caption{Random Forest cross-validatiion accuracy vs max depth}
-\label{fig:digits_rf_accuracy_vs_max_depth}
-\end{figure}
+With the best hyperparameters found, the test accuracy is $95.63\%$.
 
 \begin{table}[t]
 \caption{Classifier Performance Comparison}
@@ -771,7 +756,7 @@ This assignment was broken down as follows: Jocelyn Poon worked on task 1, Ruiyo
 \label{sec:llm}
 % ==================================================================
 \todo{LLM usage for Tasks 1 and 2 (tool, purpose: code, debugging, writing; how outputs were checked).}
-For Task 3, we used Claude (Anthropic, model Claude Opus 5.5, chat interface) interactively to plan the division of work, to guide the inspection and cleaning of the data, and to suggest code for volatility adjustment and evaluation, which we ran, checked against controls and modified ourselves. The same assistant drafted the agent prompt and an initial version of the Task 3 text in this report, both of which we reviewed and edited. Experiments were then run with Claude Code (Opus 5.5 High from \texttt{/model} in Claude Code) inside our repository. Its context consisted of the repository, our exploration notebook and the written prompt, reproduced in the appendix of the submitted notebook together with a summary of the agent's log, which records its decisions and the questions it asked us. We reviewed the agent's output at each of its five checkpoints, made all commits ourselves, and approved the finalists before the test evaluation.
+Our implementation of the MLP class is a revision of that output by Chat GPT-5, prompted by passing the given MLP Python class template and asking it to give a minimal implementation. For Task 3, we used Claude (Anthropic, model Claude Opus 5.5, chat interface) interactively to plan the division of work, to guide the inspection and cleaning of the data, and to suggest code for volatility adjustment and evaluation, which we ran, checked against controls and modified ourselves. The same assistant drafted the agent prompt and an initial version of the Task 3 text in this report, both of which we reviewed and edited. Experiments were then run with Claude Code (Opus 5.5 High from \texttt{/model} in Claude Code) inside our repository. Its context consisted of the repository, our exploration notebook and the written prompt, reproduced in the appendix of the submitted notebook together with a summary of the agent's log, which records its decisions and the questions it asked us. We reviewed the agent's output at each of its five checkpoints, made all commits ourselves, and approved the finalists before the test evaluation.
 
 
 % ==================================================================
