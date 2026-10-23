@@ -38,11 +38,10 @@ class LassoRegression():
         grad_b = np.mean(Y_prediction - self.Y)
 
         #gradient descent
-        self.W -= self.learning_rate * grad_W
+        W_temp = self.W - self.learning_rate * grad_W
+        self.W = self.soft_thresholding(
+        W_temp, self.learning_rate * self.l1_penalty)
         self.b -= self.learning_rate * grad_b
-        W_temp =self.W - self.learning_rate*grad_W
-        self.W = self.soft_thresholding(W_temp, self.learning_rate*self.l1_penalty)
-
         # calculate objective function
         residuals = self.Y - self.predict(self.X)
         mse_loss = np.sum(residuals ** 2) / (2 * self.m)

@@ -320,70 +320,37 @@ For prediction, given a new input $x$, every tree produces a class prediction. T
 \end{figure}
 \begin{figure}
     \centering
-    \safefig{task2_elasticnet_residual.png}
-    \caption{Elastic Net Residual}
-    \label{fig:task2_elasticnet_residual.png}
-\end{figure}
-\begin{figure}
-    \centering
     \safefig{task2_elasticnet_featurecomp.png}
     \caption{Elastic Net Feature Comparison}
     \label{fig:task2_elasticnet_featurecomp.png}
 \end{figure}
 \begin{figure}
     \centering
-    \safefig{task2_elasticnet_lr.png}
-    \caption{Elastic Net Learning Rate}
-    \label{fig:task2_elasticnet_lr.png}
+    \safefig{iter_both.png}
+    \caption{Iteration Comparison}
+    \label{fig:iter_both.png}
 \end{figure}
 \begin{figure}
     \centering
-    \safefig{task2_elasticnet_l1.png}
-    \caption{Elastic Net $L_1$ Ratio}
-    \label{fig:task2_elasticnet_l1.png}
+    \safefig{l1_penalty_both.png}
+    \caption{L1 Penalty Comparison}
+    \label{fig:l1_penalty_both.png}
 \end{figure}
 \begin{figure}
     \centering
-    \safefig{task2_elasticnet_alpha.png}
-    \caption{Elastic Net Alpha}
-    \label{fig:task2_elasticnet_alpha.png}
+    \safefig{l2_penalty.png}
+    \caption{Elastic Net L2 Penalty}
+    \label{fig:l2_penalty.png}
 \end{figure}
 \begin{figure}
     \centering
-    \safefig{task2_elasticnet_iterperform.png}
-    \caption{Elastic Net Iterations}
-    \label{fig:task2_elasticnet_iterperform.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{task2_elasticnet_l2.png}
-    \caption{Elastic Net $L_2$ Ratio}
-    \label{fig:task2_elasticnet_l2.png}
+    \safefig{lr_both.png}
+    \caption{Learning Rate Comparison}
+    \label{fig:lr_both.png}
 \end{figure}
 The custom Elastic Net model produced an MSE= 2773.64 and $R^2 = 0.4862$ while the Scikit Learn Linear Regression model produced MSE = 2821.75 and $R^2 = 0.4773$, demonstrating similar results. Fig.~\ref{fig:task2_elasticnet_pvsa.png} shows the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
 Fig.~\ref{fig:task2_elasticnet_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ and $L_2$ penalties were able to push certain coefficients toward zero and induce sparsity, reducing the influence of redundant or less useful features. Some coefficients remain relatively similar between the two models, indicating that those features are important in prediction. The $L_1$ and $L_2$ ratios are defined in the custom model as $\alpha \cdot L$ratio.
-Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, Fig.~\ref{fig:task2_elasticnet_alpha.png}, and Fig.~\ref{fig:task2_elasticnet_iterperform.png} show how the choice of parameters affects the model's performance.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Elastic Net Hyperparameter Optimization Results}
-    \label{tab:elasticnet_hyperparameters}
-    \begin{tabular}{|l|c|c|}
-        \hline
-        \textbf{Hyperparameter} & \textbf{Tested Range} & \textbf{Best Value} \\
-        \hline
-        Learning Rate & 0.001--0.2 & 0.025 \\
-        \hline
-        Iterations & 100--10,000 & 500 \\
-        \hline
-        Alpha ($\alpha$) & 0.001--1.0 & 0.05 \\
-        \hline
-        L1 Ratio & 0--1 & 0.5 \\
-        \hline
-        L2 Ratio & 0--1 & 0.5 \\
-        \hline
-    \end{tabular}
-\end{table}
+Fig.~\ref{fig:lr_both.png}, Fig.~\ref{fig:l2_penalty.png}, Fig.~\ref{fig:l1_penalty_both.png}, and Fig.~\ref{fig:iter_both.png} show how the choice of parameters affects the model's performance. The optimized parameter values are shown in Table ~\ref{tab:elasticnet_hyperparameters}.
 
 \subsubsection{Lasso.}
 \begin{figure}
@@ -394,58 +361,29 @@ Fig.~\ref{fig:task2_elasticnet_l1.png}, Fig.~\ref{fig:task2_elasticnet_l2.png}, 
 \end{figure}
 \begin{figure}
     \centering
-    \safefig{task2_lasso_residual.png}
-    \caption{Lasso Residual}
-    \label{fig:task2_lasso_residual.png}
-\end{figure}
-\begin{figure}
-    \centering
     \safefig{task2_lasso_featurecomp.png}
     \caption{Lasso Feature Comparison}
     \label{fig:task2_lasso_featurecomp.png}
 \end{figure}
-\begin{figure}
-    \centering
-    \safefig{task2_lasso_lr.png}
-    \caption{Lasso Learning Rate}
-    \label{fig:task2_lasso_lr.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{task2_lasso_l1.png}
-    \caption{Lasso $L_1$ Ratio}
-    \label{fig:task2_lasso_l1.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{task2_lasso_alpha.png}
-    \caption{Lasso Alpha}
-    \label{fig:task2_lasso_alpha.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{task2_lasso_iterperform.png}
-    \caption{Lasso Iterations}
-    \label{fig:task2_lasso_iterperform.png}
-\end{figure}
-The custom Lasso model produced an MSE= 2774.43 and $R^2 = 0.4861$ while the Scikit Learn Linear Regression model produced MSE = 2821.75 and $R^2 = 0.4773$. Fig.~\ref{fig:task2_lasso_pvsa.png} examines the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Like the elastic net analysis, both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
-Fig.~\ref{fig:task2_lasso_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ penalty was able to push certain coefficients toward zero, reducing the influence of redundant or less useful features. Again, some coefficients remain relatively similar between the two models, indicating that those features are important in prediction.
-Fig.~\ref{fig:task2_lasso_l1.png}, Fig.~\ref{fig:task2_lasso_alpha.png}, and Fig.~\ref{fig:task2_lasso_iterperform.png} show how the choice of parameters affects the model's performance.
+
+The custom Lasso model produced an MSE = 2803.57 and $R^2 = 0.4807$ while the Scikit Learn Linear Regression model produced MSE = 2821.75 and $R^2 = 0.4773$. Fig.~\ref{fig:task2_lasso_pvsa.png} examines the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Like the elastic net analysis, both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
+Fig.~\ref{fig:task2_lasso_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ penalty was able to push more coefficients toward zero than in elastic net, reducing the influence of redundant or less useful features. Again, some coefficients remain relatively similar between the two models, indicating that those features are important in prediction.
+Fig.~\ref{fig:lr_both.png}, Fig.~\ref{fig:l2_penalty.png}, Fig.~\ref{fig:l1_penalty_both.png}, and Fig.~\ref{fig:iter_both.png} show how the choice of parameters affects the model's performance.
 \begin{table}[htbp]
     \centering
-    \caption{Lasso Hyperparameter Optimization Results}
+    \caption{Lasso and Elastic Net Hyperparameter Optimization Results}
     \label{tab:elasticnet_hyperparameters}
-    \begin{tabular}{|l|c|c|}
+    \begin{tabular}{|l|c|c|c|}
         \hline
-        \textbf{Hyperparameter} & \textbf{Tested Range} & \textbf{Best Value} \\
+        \textbf{Parameter} & \textbf{Tested Range} & \textbf{Elastic Net Best} & \textbf{Lasso Best}\\
         \hline
-        Learning Rate & 0.001--0.2 & 0.025 \\
+        Learning Rate & 0.001--0.2 & 0.025 & 0.2\\
         \hline
-        Iterations & 100--10,000 & 500 \\
+        Iterations & 100--10,000 & 500 & 2500 \\
         \hline
-        Alpha ($\alpha$) & 0.001--1.0 & 0.1 \\
+        L1 Penalty & 0--1 & 0.025 & 0.025 \\
         \hline
-        L1 Ratio & 0--1 & 0.75 \\
+        L2 Penalty & 0--1 & 0.05 & - \\
         \hline
     \end{tabular}
 \end{table}
