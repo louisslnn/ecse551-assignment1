@@ -40,18 +40,18 @@ def world(functions):
     raw = pd.DataFrame(rng.normal(0, .02, (310, 110)), index=days)
     members = pd.DataFrame(True, index=days, columns=raw.columns)
     members.iloc[265:268, 0] = False
-    sigma = functions['task3_volatility'](raw)
+    sigma = functions['volatility'](raw)
     adjusted = raw / sigma.shift()
     target = adjusted.clip(-5, 5).shift(-1).where(members)
     target = target.sub(target.mean(axis=1), axis=0)
     dates = pd.Series(days, index=days).shift(-1)
-    features, _ = functions['task3_features'](adjusted.clip(-5, 5), sigma, members)
+    features, _ = functions['build_features'](adjusted.clip(-5, 5), sigma, members)
     return dict(days=days, raw=raw, members=members, sigma=sigma, adjusted=adjusted,
                 target=target, dates=dates, features=features)
 
 def test_ewma_equations_burn_in_and_lag(functions):
     raw = pd.DataFrame({'a': [.1, -.2, np.nan, .05]})
-    sigma = functions['task3_volatility'](raw, beta1=.5, beta2=.75, initial_variance=.04, burn_in=2)
+    sigma = functions['volatility'](raw, beta1=.5, beta2=.75, initial_variance=.04, burn_in=2)
     mean1 = .25*.1
     variance1 = .5*(.1-mean1)**2 + .5*.04
     mean2 = .25*(-.2) + .75*mean1
@@ -67,8 +67,8 @@ def test_features_do_not_change_when_future_is_removed(functions, world, positio
     w = world
     cut = w['days'][position]
     raw, members = w['raw'].loc[:cut], w['members'].loc[:cut]
-    sigma = functions['task3_volatility'](raw)
-    features, _ = functions['task3_features']((raw/sigma.shift()).clip(-5, 5), sigma, members)
+    sigma = functions['volatility'](raw)
+    features, _ = functions['build_features']((raw/sigma.shift()).clip(-5, 5), sigma, members)
     for name in features:
         pd.testing.assert_series_equal(features[name].loc[cut], w['features'][name].loc[cut])
 
@@ -80,17 +80,17 @@ def test_feature_ranks_membership_missingness_and_momentum(functions):
     members = raw.notna()
     members['outside'] = False
     sigma = raw * 0 + 1
-    features, _ = functions['task3_features'](raw, sigma, members)
+    features, _ = functions['build_features'](raw, sigma, members)
     assert features['momentum'].iloc[-1]['a'] == .5
     assert features['momentum'].iloc[-1]['b'] < .5
     assert features['momentum'].iloc[-1]['outside'] == 0
-    ranks = functions['task3_rank'](pd.DataFrame([[1., np.nan, 3.]]), pd.DataFrame([[True]*3]))
+    ranks = functions['rank_members'](pd.DataFrame([[1., np.nan, 3.]]), pd.DataFrame([[True]*3]))
     assert ranks.iloc[0].tolist() == [-.5, 0., .5]
 
 def test_refit_uses_only_strictly_earlier_outcomes(functions, world):
     w = world
     first = w['days'][270]
-    _, records = functions['task3_walk_forward'](
+    _, records = functions['walk_forward'](
         w['features'], w['target'], w['members'], w['dates'], {'model':'lasso','alpha':.0001},
         first, w['days'][290], train_days=60, refit_every=10, max_rows=2000)
     assert (records.last_training_outcome < records.refit).all()
@@ -106,9 +106,9 @@ def test_current_day_outcome_cannot_enter_fit(functions, world, monkeypatch):
     def capture(spec, X, y):
         seen.append((X.copy(), y.copy()))
         return Probe()
-    monkeypatch.setitem(functions, 'task3_fit', capture)
+    monkeypatch.setitem(functions, 'fit_model', capture)
     t = w['days'][270]
-    fn = functions['task3_walk_forward']
+    fn = functions['walk_forward']
     args = (w['features'], w['target'], w['members'], w['dates'], {'model':'lasso','alpha':.0001}, t, t)
     fn(*args, train_days=60)
     changed = w['target'].copy()
@@ -120,17 +120,17 @@ def test_current_day_outcome_cannot_enter_fit(functions, world, monkeypatch):
 def test_walk_forward_predictions_survive_raw_data_truncation(functions, world):
     w = world
     spec = {'model':'lasso','alpha':.0001}
-    full, _ = functions['task3_walk_forward'](w['features'], w['target'], w['members'], w['dates'],
+    full, _ = functions['walk_forward'](w['features'], w['target'], w['members'], w['dates'],
                                                spec, w['days'][270], w['days'][300], train_days=60, refit_every=10)
     cut = w['days'][285]
     raw, mem = w['raw'].loc[:cut], w['members'].loc[:cut]
-    sigma = functions['task3_volatility'](raw)
+    sigma = functions['volatility'](raw)
     adjusted = raw/sigma.shift()
-    features, _ = functions['task3_features'](adjusted.clip(-5, 5), sigma, mem)
+    features, _ = functions['build_features'](adjusted.clip(-5, 5), sigma, mem)
     target = adjusted.clip(-5, 5).shift(-1).where(mem)
     target = target.sub(target.mean(axis=1), axis=0)
     dates = pd.Series(raw.index, index=raw.index).shift(-1)
-    short, _ = functions['task3_walk_forward'](features, target, mem, dates, spec, w['days'][270], cut,
+    short, _ = functions['walk_forward'](features, target, mem, dates, spec, w['days'][270], cut,
                                                train_days=60, refit_every=10)
     pd.testing.assert_frame_equal(full.loc[:cut], short)
 
@@ -145,7 +145,7 @@ def boundary_world():
 
 def test_outcome_split_has_no_first_test_return_in_development(functions):
     days, raw, mem, dates, actual, pred = boundary_world()
-    fn = functions['task3_evaluate']
+    fn = functions['score_predictions']
     dev, _, _ = fn(pred, actual, mem, raw, dates, '2010-12-30','2010-12-31')
     test, _, _ = fn(pred, actual, mem, raw, dates, '2011-01-01','2013-12-31')
     assert dev.index.tolist() == list(days[1:3])
@@ -158,7 +158,7 @@ def test_outcome_split_has_no_first_test_return_in_development(functions):
 
 def test_missing_day_and_fewer_than_100_scored_fail(functions):
     days, raw, mem, dates, actual, pred = boundary_world()
-    fn = functions['task3_evaluate']
+    fn = functions['score_predictions']
     with pytest.raises(ValueError,match='Fewer than 100'):
         fn(pred.drop(index=days[2]), actual, mem, raw, dates,'2011-01-01','2013-12-31')
     pred.loc[days[2],:1] = np.nan
@@ -175,7 +175,7 @@ def test_hand_calculated_pnl_ic_and_raw_market(functions):
     members = pred.notna()
     members.iloc[1,2] = False
     dates = pd.Series(days,index=days).shift(-1)
-    pnl, ic, metrics = functions['task3_evaluate'](pred,actual,members,raw,dates,str(days[1].date()),str(days[-1].date()),min_predictions=2)
+    pnl, ic, metrics = functions['score_predictions'](pred,actual,members,raw,dates,str(days[1].date()),str(days[-1].date()),min_predictions=2)
     positions = pred.where(members).sub(pred.where(members).mean(axis=1),axis=0)
     expected = np.array([.2,-.1,.3,-.1])
     np.testing.assert_allclose(pnl, expected, atol=1e-14)
@@ -190,26 +190,26 @@ def test_hand_calculated_pnl_ic_and_raw_market(functions):
     ([2,2,2],np.inf,1),([0,0,0],np.nan,0),([1,-1,1],.5,0),
     ([1,2,np.nan,8,9],5.5,0),([1,np.nan,9],np.nan,0)])
 def test_holding_gap_zero_and_infinite_cases(functions,values,expected,infinite):
-    holding, count = functions['task3_holding'](pd.DataFrame({'a':values}))
+    holding, count = functions['holding_period'](pd.DataFrame({'a':values}))
     assert np.isnan(holding) if np.isnan(expected) else holding == pytest.approx(expected)
     assert count == infinite
 
 def test_constant_predictions_have_undefined_sharpe_and_ic(functions):
     days, raw, mem, dates, actual, pred = boundary_world()
-    _, ic, metrics = functions['task3_evaluate'](pred*0+1,actual,mem,raw,dates,'2011-01-01','2013-12-31')
+    _, ic, metrics = functions['score_predictions'](pred*0+1,actual,mem,raw,dates,'2011-01-01','2013-12-31')
     assert np.isnan(metrics['Sharpe']) and ic.isna().all()
 
 def test_tiny_constant_forecasts_do_not_create_numerical_market_exposure(functions):
     days, raw, mem, dates, actual, pred = boundary_world()
     pred = (pred*0+1e-10).astype('float32')
     mem.iloc[2, 0] = False
-    pnl, ic, metrics = functions['task3_evaluate'](pred,actual,mem,raw,dates,'2011-01-01','2013-12-31')
+    pnl, ic, metrics = functions['score_predictions'](pred,actual,mem,raw,dates,'2011-01-01','2013-12-31')
     assert pnl.eq(0).all() and np.isnan(metrics['Sharpe']) and ic.isna().all()
 
 def test_weekend_sentiment_is_delayed(functions):
     trading = pd.to_datetime(['2010-01-08','2010-01-11','2010-01-12'])
     sentiment = pd.DataFrame({'a':[2.,4.,6.,10.]},index=pd.date_range('2010-01-08',periods=4))
-    aligned = functions['task3_align_sentiment'](sentiment,trading)
+    aligned = functions['align_sentiment'](sentiment,trading)
     assert aligned.loc['2010-01-11','a'] == 4
     assert aligned.loc['2010-01-12','a'] == 10
     assert pd.Timestamp('2010-01-08') not in aligned.index
@@ -220,7 +220,7 @@ def test_sentiment_excludes_duplicate_ids(functions,tmp_path):
         pd.DataFrame({'date':calendar,'10':1.,'20':2.}).to_csv(tmp_path/f'psych_{name}.csv',index=False)
     trading = pd.bdate_range('2010-01-01',periods=5)
     members = pd.DataFrame(True,index=trading,columns=['10','10_b','20'])
-    features, coverage, _ = functions['task3_sentiment'](tmp_path,members,['10'])
+    features, coverage, _ = functions['build_sentiment_features'](tmp_path,members,['10'])
     assert features['sentiment_available']['10'].eq(0).all()
     assert features['sentiment_available']['10_b'].eq(0).all()
     assert features['sentiment_available']['20'].iloc[1] == 1
@@ -235,7 +235,7 @@ def test_loader_keeps_duplicate_securities_and_removes_empty_columns(functions,t
         tmp_path/'eq_stock_metadata.csv',index=False)
     for name in ['bullish','bearish']:
         pd.DataFrame({'date':days,'10':1.}).to_csv(tmp_path/f'psych_{name}.csv',index=False)
-    raw, members, meta, cleaning = functions['task3_load'](tmp_path)
+    raw, members, meta, cleaning = functions['load_data'](tmp_path)
     assert raw.columns.tolist()==['10','10_b']
     assert members.columns.equals(raw.columns) and meta.index.tolist()==['10','10_b']
     assert cleaning['empty_columns_removed']==1
@@ -247,7 +247,7 @@ def test_all_model_families_fit_and_predict(functions,model):
     rng = np.random.default_rng(42)
     X = rng.normal(size=(500,5))
     y = X[:,0]*.01+rng.normal(size=500)
-    fitted = functions['task3_fit'](model,X,y)
+    fitted = functions['fit_model'](model,X,y)
     assert np.isfinite(fitted.predict(X[:10])).all()
 
 def test_regression_sources_included_without_behavior_changes():
