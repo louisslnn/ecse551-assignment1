@@ -42,7 +42,7 @@
 
 % ==================================================================
 \begin{abstract}
-We study regression, classification and stock-return prediction. On the Diabetes dataset, ElasticNet and Lasso regression implemented from scratch with gradient descent reach test mean squared errors (MSE) of 2,774 and 2,804 ($R^2 = 0.49$ and $0.48$), slightly better than scikit-learn's LinearRegression (2,822), while shrinking redundant correlated features. On the Digits dataset, a one-vs-rest support vector machine (SVM) and a one-hidden-layer multilayer perceptron (MLP) implemented from scratch reach test accuracies of 95.6\% and 96.9\%; scikit-learn's RandomForestClassifier also reaches 96.9\%.
+We study regression, classification and stock-return prediction. On the Diabetes dataset, ElasticNet and Lasso regression implemented from scratch with gradient descent reach test mean squared errors (MSE) of 2,774 and 2,804 ($R^2 = 0.49$ and $0.48$), slightly better than scikit-learn's LinearRegression (2,822), while shrinking redundant correlated features. On the Digits dataset, a one-vs-rest support vector machine (SVM) and a one-hidden-layer multilayer perceptron (MLP) implemented from scratch reach test accuracies of 95.6\% and 97.0\%; scikit-learn's RandomForestClassifier also reaches 96.5\%.
 In Task 3, we predict the next-day volatility-adjusted returns of S\&P~500 stocks with a Lasso, a random forest and an MLP refit on rolling three-year windows. On 2011--2013, the random forest and the MLP reach Sharpe ratios of 3.19 and 2.34, but only 1.58 and 0.77 when trades are executed one day later.
 \end{abstract}
 
@@ -250,10 +250,10 @@ Since the data have 64 features, we plot decision boundaries after projecting th
 \end{figure}
 
 \subsubsection{Multilayer Perceptron}
-For the MLP, grid search evaluates hidden sizes $n_1\in\{32,64,96,128\}$ and seven logarithmically spaced learning rates from $10^{-1.5}$ to $10^{-1}$, with 400 epochs, using mean five-fold stratified cross-validation accuracy. The selected settings are $n_1=128$ and $\eta\approx0.068129$, giving a cross-validation accuracy of 96.98\% and a test accuracy of 96.85\%. The hidden-size and learning-rate sweeps are provided in the notebook: differences across the tested hidden sizes are modest, with the largest size achieving the highest accuracy, while learning-rate performance is non-monotonic. A separate sweep over $\{50,100,200,400,800\}$ epochs holds the selected width and learning rate fixed. Accuracy improves substantially from 50 to 100 epochs, then more gradually up to 400, with a slight decrease at 800 (Fig.~\ref{fig:mlp_forest_results}(a)). Training time increases approximately linearly with the epoch count, as shown in the notebook. The final model retains 400 epochs.
+For the MLP, grid search evaluates hidden sizes $n_1\in\{64,96,128,160,192\}$ and seven logarithmically spaced learning rates from $10^{-1.5}$ to $10^{-1}$, with 400 epochs, using mean five-fold stratified cross-validation accuracy. The selected settings are $n_1=160$ and $\eta\approx0.08254$, giving a cross-validation accuracy of 97.14\% and a test accuracy of 97.04\%. The hidden-size and learning-rate sweeps are provided in the notebook: differences across the tested hidden sizes are modest, with the largest size achieving the highest accuracy, while learning-rate performance is non-monotonic. A separate sweep over $\{50,100,200,400,800\}$ epochs holds the selected width and learning rate fixed. Accuracy improves substantially from 50 to 100 epochs, then more gradually up to 400, with a slight decrease at 800 (Fig.~\ref{fig:mlp_forest_results}(a)). Training time increases approximately linearly with the epoch count, as shown in the notebook. The final model retains 400 epochs.
 
 \subsubsection{Random Forest}
-For the random forest, grid search evaluates the number of trees $\in\{50,75,100,125,150\}$ and maximum depth $\in\{5,10,15,20,25\}$ using the same five-fold stratified cross-validation procedure, with random state 42. The selected settings are 100 trees and maximum depth 10, giving a cross-validation accuracy of 97.45\% and a test accuracy of 96.85\%. Accuracy varies little across the tested tree counts, as shown in the notebook. Depth 5 performs worse than depth 10, while deeper trees provide no improvement in the plotted comparison (Fig.~\ref{fig:mlp_forest_results}(b)).
+For the random forest, grid search evaluates the number of trees $\in\{50,75,100,125,150\}$ and maximum depth $\in\{5,10,15,20,25\}$ using the same five-fold stratified cross-validation procedure, with random state 42. The selected settings are 75 trees and maximum depth 15, giving a cross-validation accuracy of 97.53\% and a test accuracy of 96.48\%. Accuracy varies little across the tested tree counts, as shown in the notebook. Depth 5 performs worse than depth 10, while deeper trees provide no improvement in the plotted comparison (Fig.~\ref{fig:mlp_forest_results}(b)).
 
 \begin{figure}[!htb]
 \centering
@@ -264,7 +264,7 @@ For the random forest, grid search evaluates the number of trees $\in\{50,75,100
 \end{figure}
 
 \subsubsection{Comparison}
-Table~\ref{tab:classifiers_comparison} compares the three classifiers. The MLP and random forest tie at 96.85\% test accuracy, each correctly classifying 523 of 540 test images; the linear SVM reaches 95.56\%, correctly classifying 516. The forest has the highest selected cross-validation accuracy. Both nonlinear models can capture relationships between pixels beyond those represented by the linear one-vs-rest SVM, although their identical test accuracy does not establish that they make the same errors. The SVM's strong performance shows that linear class scores are effective in the original 64-dimensional representation, whereas the two-dimensional PCA projection loses substantial classification information (Fig.~\ref{fig:svm_results}(b)).
+Table~\ref{tab:classifiers_comparison} compares the three classifiers. The linear SVM reaches 95.56\% test accuracy and the MLP achieved 97.04\% test accuracy; while random forest reached 96.48\%. The random forest has the highest selected cross-validation accuracy. Both nonlinear models can capture relationships between pixels beyond those represented by the linear one-vs-rest SVM. The SVM's strong performance shows that linear class scores are effective in the original 64-dimensional representation, whereas the two-dimensional PCA projection loses substantial classification information (Fig.~\ref{fig:svm_results}(b)).
 
 \begin{table}[t]
 \caption{Classifier performance on the Digits test set}
@@ -277,8 +277,8 @@ Table~\ref{tab:classifiers_comparison} compares the three classifiers. The MLP a
 Model & Hyperparameters & Accuracy \\
 \midrule
 Multiclass SVM & $\lambda=10^{-5}$, $\eta=0.01$, 400 iterations & 95.56\% \\
-MLP & $n_1=128$, $\eta\approx0.068$, 400 epochs & 96.85\% \\
-Random forest & 100 trees, maximum depth 10 & 96.85\% \\
+MLP & $n_1=160$, $\eta\approx0.0825$, 400 epochs & 97.04\% \\
+Random forest & 75 trees, maximum depth 15 & 96.48\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -439,7 +439,7 @@ The results suggest small but persistent predictive information in past returns 
 \section{Discussion and Conclusion}
 \label{sec:conclusion}
 % ==================================================================
-On Diabetes, regularized linear models implemented from scratch slightly improved on ordinary least squares on the selected split. ElasticNet shrank coefficients, while the proximal Lasso set several exactly to zero. On Digits, the MLP and random forest tied at 96.85\% test accuracy, ahead of the linear SVM at 95.56\%. The hyperparameter studies showed sensitivity to regularization, learning rate, model capacity and training duration, although the observed curves alone do not establish every underlying cause. In Task~3, delayed execution substantially reduced the fitted models' Sharpe ratios, demonstrating the importance of evaluation timing. Improvements include selecting regression hyperparameters by cross-validation rather than inspecting test MSE, investigating mini-batch or adaptive optimization and validation-based early stopping for the scratch models, and evaluating standardized Digits features. For Task~3, future work should use an execution-lagged target and explicit transaction costs, with evaluation on a later period that has not previously been inspected.
+On Diabetes, regularized linear models implemented from scratch slightly improved on ordinary least squares on the selected split. ElasticNet shrank coefficients, while the proximal Lasso set several exactly to zero. On Digits, the MLP and random forest achieved 97.04\% and 96.48\% test accuracies, respectively, ahead of the linear SVM at 95.56\%. The hyperparameter studies showed sensitivity to regularization, learning rate, model capacity and training duration, although the observed curves alone do not establish every underlying cause. In Task~3, delayed execution substantially reduced the fitted models' Sharpe ratios, demonstrating the importance of evaluation timing. Improvements include selecting regression hyperparameters by cross-validation rather than inspecting test MSE, investigating mini-batch or adaptive optimization and validation-based early stopping for the scratch models, and evaluating standardized Digits features. For Task~3, future work should use an execution-lagged target and explicit transaction costs, with evaluation on a later period that has not previously been inspected.
 
 
 % ==================================================================
