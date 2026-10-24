@@ -3,27 +3,36 @@
 \usepackage[T1]{fontenc}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
-\usepackage{subcaption}
 \usepackage{booktabs}
 \usepackage{xcolor}
 \usepackage{cite}
 \usepackage{url}
+% Float placement: allow more floats per page so that each figure stays next to its text.
+\setcounter{topnumber}{3}
+\setcounter{dbltopnumber}{2}
+\setcounter{totalnumber}{5}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.85}
+\renewcommand{\dblfloatpagefraction}{0.85}
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator*{\argmax}{arg\,max}
 
-% Placeholder for content still to be written (renders in red; remove before submission)
-\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
-
-% Include a figure if the file exists, otherwise draw a placeholder box
-\newcommand{\safefig}[2][]{%
-  \IfFileExists{../results/figures/#2}%
-    {\includegraphics[width=#1\columnwidth]{../results/figures/#2}}%
-    {\fbox{\parbox[c][3.5cm][c]{0.92\columnwidth}{\centering\small Missing figure:\\ \texttt{\detokenize{#2}}}}}%
+% Include a figure if the file exists, otherwise draw a placeholder box.
+% Optional argument: width as a fraction of \linewidth (the column in figure, the full page width in figure*).
+\newlength{\figw}
+\newcommand{\safefig}[2][1]{%
+  \setlength{\figw}{#1\linewidth}%
+  \IfFileExists{figures/#2}%
+    {\includegraphics[width=\figw]{figures/#2}}%
+    {\fbox{\parbox[c][0.5\figw][c]{0.9\figw}{\centering\scriptsize Missing figure:\\ \texttt{\detokenize{#2}}}}}%
 }
 
 \begin{document}
 
-\title{ECSE 551 Assignment 1}
+\title{ECSE 551 Assignment 1: Regression, Classification\\ and Stock Return Prediction}
 
 \author{\IEEEauthorblockN{Jocelyn Poon, Maxime Robatche-Claive, Louis Salanon, Ruiyong Xu}
 \IEEEauthorblockA{Department of Electrical and Computer Engineering, McGill University, Montreal, Canada}}
@@ -33,18 +42,17 @@
 
 % ==================================================================
 \begin{abstract}
-% 100-150 words. Grid: summarizes the work (1) and the findings (1).
-% Name every model studied: ElasticNet, Lasso, LinearRegression, multiclass SVM, MLP, RandomForestClassifier,
-% and for Task 3 the Lasso, random forest and MLP regressors.
-A statistical analysis is first conducted on the Diabetes dataset for data processing, and then elastic net and lasso regression methods are implemented and compared to Scikit-learn's Linear Regression model. For the classification of the Digits dataset, One-vs-Rest Multiclass SVM and 2-layer MLP methods are implemented, and compared to Scikit-learn's Random Forest model. The custom Elastic Net model produced an MSE = 2773.64 and $R^2 = 0.4862$, the Lasso model produced an MSE = 2774.43 and $R^2 = 0.4861$, while the Scikit Learn Linear Regression model produced MSE = 2821.75 and $R^2 = 0.4773$, demonstrating similar results. The custom SVM and MLP models achieved 94.83\% and 96.66\% accuracies, respectively, while the Scikit-learn Random Forest model achieved 95.63\% accuracy, also demonstrating similar results. In Task 3, we predict the next-day volatility-adjusted returns of S\&P~500 stocks with a Lasso, a random forest and a multilayer perceptron trained in a walk-forward procedure, under a protocol designed to prevent lookahead and test-set overfitting. On the 2011--2013 test period, the random forest and the multilayer perceptron reach Sharpe ratios of 3.65 and 3.01, but most of this performance depends on trading at the closing prices used to form the predictions.
+We study regression, classification and stock-return prediction. On the Diabetes dataset, ElasticNet and Lasso regression implemented from scratch with gradient descent reach test mean squared errors (MSE) of 2,774 and 2,804 ($R^2 = 0.49$ and $0.48$), slightly better than scikit-learn's LinearRegression (2,822), while shrinking redundant correlated features. On the Digits dataset, a one-vs-rest support vector machine (SVM) and a one-hidden-layer multilayer perceptron (MLP) implemented from scratch reach test accuracies of 95.6\% and 96.9\%; scikit-learn's RandomForestClassifier also reaches 96.9\%.
+In Task 3, we predict the next-day volatility-adjusted returns of S\&P~500 stocks with a Lasso, a random forest and an MLP refit on rolling three-year windows. On 2011--2013, the random forest and the MLP reach Sharpe ratios of 3.19 and 2.34, but only 1.58 and 0.77 when trades are executed one day later.
 \end{abstract}
 
 
 % ==================================================================
 \section{Introduction}
 % ==================================================================
-% Grid: clearly presents the goals, all methods and all datasets (2). Introduce variables and acronyms.
-The goal of this assignment is to perform exploratory data analysis and preprocessing (Task 1), implement and tune regression and classification models from scratch to compare against Scikit-learn baselines (Task 2), and predict next-day stock returns under a strict walk-forward evaluation protocol (Task 3). The Diabetes dataset contains information on 442 patients and 10 baseline variables, with the target variable as a continuous disease-progression target one year after baseline. We implement custom elastic net and lasso regression models with gradient descent and analyze the choice of parameters, and comparing them to Scikit-learn's Linear Regression model~\cite{sklearn}. For classification, we analyze the Digits dataset, which consists of 1797 $8\times 8$ grayscale images represented as 64 pixel features across 10 digit classes (0--9). We implement a One-vs-Rest multiclass support vector machine (SVM) and a two-layer multilayer perceptron (MLP) from scratch using gradient descent, comparing them to Scikit-learn's Random Forest Classifier~\cite{sklearn}. In Tasks 1 and 2, we find that feature scaling is essential for regularized gradient-based optimization, and that our custom Elastic Net, Lasso, SVM, and MLP models closely match or slightly outperform the Scikit-learn baselines when properly tuned. Task 3 uses daily returns of S\&P~500 constituents from 1980 to 2013 and social-media sentiment scores to predict which stocks will outperform the next day. We find genuine but small short-horizon predictability: nonlinear models outperform a linear model and simple trading rules on the test period, but their advantage largely disappears when trades are executed one day later.
+This assignment applies supervised learning to three problems. Task~1 analyzes and preprocesses two benchmark datasets. The Diabetes dataset contains 10 baseline variables (age, sex, body mass index, blood pressure and six blood-serum measurements $s_1$--$s_6$) for 442 patients, with a continuous measure of disease progression one year later as the target. The Digits dataset contains 1,797 grayscale $8\times8$ images of handwritten digits, giving 64 pixel features with integer intensities from 0 to 16 and 10 classes. Task~2 implements four models from scratch with gradient descent, using only NumPy: ElasticNet and Lasso regression on Diabetes, and a multiclass SVM and an MLP on Digits. They are compared with scikit-learn's LinearRegression and RandomForestClassifier~\cite{sklearn}, using a 70\%/30\% train/test split with random state 42 (stratified by class for Digits). Regression is evaluated with the mean squared error (MSE) and the coefficient of determination ($R^2$), and classification with accuracy.
+
+Task~3 uses daily returns of S\&P~500 constituents from 1980 to 2013 and social-media sentiment scores to predict which stocks will outperform on the next trading day, judging a Lasso, a random forest and an MLP by the Sharpe ratio of the portfolio they define. We find that regularization slightly improves on ordinary least squares on Diabetes by removing redundant correlated features, that the MLP and the random forest are equally accurate on Digits, ahead of a linear SVM, and that past returns carry small but persistent information about next-day relative returns, best captured by a random forest, although much of it requires trading at the closing prices used to form the predictions.
 
 
 % ==================================================================
@@ -52,108 +60,63 @@ The goal of this assignment is to perform exploratory data analysis and preproce
 \label{sec:task1}
 % ==================================================================
 
-\subsection{Datasets}
+\subsection{Diabetes Dataset}
+\subsubsection{Cleaning and Preprocessing}
 % Grid: data cleaning and preprocessing steps clearly described (2).
-\subsubsection{Diabetes}
-The Diabetes dataset contains information about 442 patients and 10 real-valued baseline variables. The target variable measures disease progression one year after baseline. For preprocessing, it is determined that there are no missing features or values nor are there erroneous values to be cleaned. Comparing the original (Fig. ~\ref{fig:task1_regression_distributions_unscaled}) and scaled distributions (Fig. ~\ref{fig:task1_regression_distributions}) demonstrates that scaling centers the features around zero and makes their magnitudes more comparable. This is important for gradient based optimization and regularized regression, because features with different scales can negatively influence the regularization penalties. Fig. ~\ref{fig:task1_regression_boxplot} shows that outliers are present in most of the features, however, are not necessary to clean because medical variations exist and reflect diversities in human health.
-\begin{figure}
-    \centering
-    \safefig{task1_regression_distributions_unscaled.png}
-    \caption{Feature Distributions (Unscaled)}
-    \label{fig:task1_regression_distributions_unscaled}
-\end{figure}
-\subsubsection{Digits}
-The Digits data set consists of 1797 $8\times 8$ images of handwritten single digits labeled with the digits, so there are 64 features (one pixel each) and 10 labels (0--9). Each feature is an integer between 0 and 16 (inclusive) that indicates the grayscale intensity of a pixel. The data set is linted to check for any missing or out-of-range feature values or label values, and none are found. As shown by Fig.~\ref{fig:digits_pixel_intensity_distribution}, the pixel intensity spreads across the entire range and concentrates at the minimum and the maximum. The distribution of the total amount of ink in a digit image, as defined by the sum of pixel intensities, is shown in Fig.~\ref{fig:digits_ink_amount_distribution}. It approximates a bell curve and there is no notable abnormality.
+The Diabetes dataset contains 442 patients and 10 real-valued baseline variables. There are no missing values, duplicate rows or erroneous values to clean. The features distributed by scikit-learn are already mean-centred and scaled to unit Euclidean norm, so we loaded the original units for the statistical analysis (Table~\ref{tab:diabetes_stats} and Fig.~\ref{fig:t1_diab_dist}). In original units, the standard deviations of the features range from 0.5 (sex) to 34.6 ($s_1$). For Task~2, we therefore standardize the features to zero mean and unit variance using statistics of the training set only. This matters for gradient-based optimization and for regularized regression, because a penalty on the weights would otherwise depend on the units of each feature. Box plots (in the notebook) show outliers in most features; we keep them, because they reflect genuine variation between patients rather than recording errors.
 
-\begin{figure}[t]
-\centering
-\safefig[0.8]{digits_pixel_intensity_distribution.png}
-\caption{Pixel intensity distribution in digits}
-\label{fig:digits_pixel_intensity_distribution}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\safefig[0.9]{digits_ink_amount_distribution.png}
-\caption{Distribution of the total amount of ink in a digit image}
-\label{fig:digits_ink_amount_distribution}
-\end{figure}
-
-\subsection{Statistical Analysis}
+\subsubsection{Statistical Analysis}
 % Grid: statistical data analysis included, e.g. means, box plots, correlations (1).
-% Assignment questions: means, min/max, need for scaling, modality, heavy tails vs Gaussian, discrete features, correlated features.
-\subsubsection{Diabetes}
-Fig.~\ref{fig:task1_regression_distributions} shows the histograms of all the features, showing that several features have approximately bell shaped distributions centered around one mode, although some exhibit skewness. Fig.~\ref{fig:task1_regression_boxplot} are the box plots showing the distribution and variability of each feature. Sex is represented by two numerical categories, but as it is a categorical variable, its box plot is not very informative. Finally, Fig.~\ref{fig:task1_regression_corr_matrix} shows the correlation coefficients between features and the target while Fig.~\ref{fig:task1_regression_correlations} shows scatter plots of moderately positive correlations. Strong correlations between features show multicollinearity, where multiple features have overlapping information.
-\begin{table}[htbp]
+Most features have approximately bell-shaped distributions with a single mode, although some, such as body mass index and $s_3$, are right-skewed, and $s_4$ takes only a few distinct values (Fig.~\ref{fig:t1_diab_dist}). Sex takes only two values, so it is a categorical variable.
+
+\begin{table}[!htb]
 \centering
-\caption{Statistics of the Diabetes Dataset}
+\caption{Statistics of the Diabetes dataset (original units)}
 \label{tab:diabetes_stats}
-\resizebox{0.48\textwidth}{!}{%
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lrrrrrrrrrr}
-\hline
+\toprule
  & age & sex & bmi & bp & s1 & s2 & s3 & s4 & s5 & s6 \\
-\hline
-count & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 & 442.000 \\
-mean  & 48.518 & 1.468 & 26.376 & 94.647 & 189.140 & 115.439 & 49.788 & 4.070 & 4.641 & 91.260 \\
-std   & 13.109 & 0.500 & 4.418 & 13.831 & 34.608 & 30.413 & 12.934 & 1.290 & 0.522 & 11.496 \\
-min   & 19.000 & 1.000 & 18.000 & 62.000 & 97.000 & 41.600 & 22.000 & 2.000 & 3.258 & 58.000 \\
-25\%  & 38.250 & 1.000 & 23.200 & 84.000 & 164.250 & 96.050 & 40.250 & 3.000 & 4.277 & 83.250 \\
-50\%  & 50.000 & 1.000 & 25.700 & 93.000 & 186.000 & 113.000 & 48.000 & 4.000 & 4.621 & 91.000 \\
-75\%  & 59.000 & 2.000 & 29.275 & 105.000 & 209.750 & 134.500 & 57.750 & 5.000 & 4.997 & 98.000 \\
-max   & 79.000 & 2.000 & 42.200 & 133.000 & 301.000 & 242.400 & 99.000 & 9.090 & 6.107 & 124.000 \\
-\hline
+\midrule
+mean  & 48.52 & 1.47 & 26.38 & 94.65 & 189.14 & 115.44 & 49.79 & 4.07 & 4.64 & 91.26 \\
+std   & 13.11 & 0.50 & 4.42 & 13.83 & 34.61 & 30.41 & 12.93 & 1.29 & 0.52 & 11.50 \\
+min   & 19.00 & 1.00 & 18.00 & 62.00 & 97.00 & 41.60 & 22.00 & 2.00 & 3.26 & 58.00 \\
+median & 50.00 & 1.00 & 25.70 & 93.00 & 186.00 & 113.00 & 48.00 & 4.00 & 4.62 & 91.00 \\
+max   & 79.00 & 2.00 & 42.20 & 133.00 & 301.00 & 242.40 & 99.00 & 9.09 & 6.11 & 124.00 \\
+\bottomrule
 \end{tabular}%
 }
 \end{table}
-\begin{figure}
-    \centering
-    \safefig{task1_regression_distributions.png}
-    \caption{Feature Distributions (Scaled)}
-    \label{fig:task1_regression_distributions}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{task1_regression_corr_matrix.png}
-    \caption{Feature Correlation}
-    \label{fig:task1_regression_corr_matrix}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{task1_regression_correlations.png}
-    \caption{Examples of Correlated Features}
-    \label{fig:task1_regression_correlations}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{task1_regression_boxplot.png}
-    \caption{Box Plots of Features}
-    \label{fig:task1_regression_boxplot}
-\end{figure}
 
-\subsubsection{Digits}
-
-Fig.~\ref{fig:digits_class_sizes} shows the sample sizes of different digits, demonstrating that the class sizes are balanced. The mean digit image is shown in Fig.~\ref{fig:digits_mean_image}. Pixels are generally dimmer near the left and right edges, but the middle of the top and the bottom edges have the strongest mean pixel intensities. Fig.~\ref{fig:digits_image_variance} shows the heat map of pixel intensity variance, indicating that the variance is the highest near the center. The pixels on the left and right edges have a zero or near zero variance, indicating that all or most of those pixels have a constant value, which, based on the mean image, is zero. 
-
-\begin{figure}[t]
+\begin{figure}[!htb]
 \centering
-\safefig[0.9]{digits_class_sizes.png}
-\caption{Class sizes of the Digits dataset}
-\label{fig:digits_class_sizes}
+\safefig{task1_regression_distributions_unscaled.png}
+\caption{Distributions of the Diabetes features in original units.}
+\label{fig:t1_diab_dist}
 \end{figure}
 
-\begin{figure}[t]
+The correlation matrix (Fig.~\ref{fig:t1_diab_corr}) shows that body mass index (0.59), $s_5$ (0.57) and blood pressure (0.44) are the features most correlated with disease progression, while $s_3$ is negatively correlated with it ($-0.39$). Some features are strongly correlated with each other, in particular the cholesterol measures $s_1$ and $s_2$ (0.90), and $s_3$ and $s_4$ ($-0.74$). This multicollinearity means that several features carry overlapping information, which affects the regression coefficients in Task~2.
+
+\begin{figure}[!htb]
 \centering
-\begin{subfigure}[t]{0.45\columnwidth}
-\safefig{digits_mean_image.png}
-\caption{Mean image}
-\label{fig:digits_mean_image}
-\end{subfigure}
-\begin{subfigure}[t]{0.45\columnwidth}
-\safefig{digits_image_variance.png}
-\caption{Variance of image}
-\label{fig:digits_image_variance}
-\end{subfigure}
-\caption{Heatmaps of the pixel intensity mean and variance of digits}
+\safefig[0.9]{task1_regression_corr_matrix.png}
+\caption{Pearson correlations between the Diabetes features and the target (disease progression).}
+\label{fig:t1_diab_corr}
+\end{figure}
+
+\subsection{Digits Dataset}
+\subsubsection{Cleaning and Preprocessing}
+The Digits dataset consists of 1,797 $8\times8$ images of handwritten digits, so there are 64 features (one per pixel) and 10 labels (0--9). Each feature is an integer between 0 and 16 that gives the grayscale intensity of a pixel. We checked the dataset for missing or out-of-range feature and label values and found none. Since all features share the same 0--16 scale, we use them without rescaling.
+
+\subsubsection{Statistical Analysis}
+The classes are balanced, with 174 to 183 images per digit. Pixel intensities span the whole range but concentrate at the extremes: about half of all pixel values are 0 and about 9\% are 16. The total amount of ink in an image, defined as the sum of its pixel intensities, has an approximately bell-shaped distribution with no notable abnormality. The mean image and the pixel variance (Fig.~\ref{fig:t1_digits}) show where the information lies. The pixels in the leftmost and rightmost columns are almost always blank, with near-zero variance, so they carry little information, whereas variance is highest near the centre, where digits differ most.
+
+\begin{figure}[!htb]
+\centering
+\safefig[0.48]{digits_mean_image.png}\hfill
+\safefig[0.48]{digits_pixel_variance.png}
+\caption{Digits: (a) mean intensity and (b) variance of each pixel over the dataset.}
+\label{fig:t1_digits}
 \end{figure}
 
 
@@ -163,104 +126,43 @@ Fig.~\ref{fig:digits_class_sizes} shows the sample sizes of different digits, de
 % ==================================================================
 
 \subsection{Methodology}
-% Grid (Methodology): ElasticNet with loss (2), Lasso with soft thresholding and loss (2), LinearRegression (2),
-% MLP with loss (2), SVM with hinge loss and one-vs-rest (2), RandomForestClassifier (2),
-% metrics MSE and accuracy mentioned (0.5) and explained (1), description of model training (1).
-% Also: define hyperparameters, state the 70/30 split with random state 42, and how hyperparameters were tuned.
 
-\textit{Evaluation.} The hyperparameters of the Elastic Net and Lasso models were tuned using a one at a time, where each hyperparameter was varied independently while the remaining parameters were held constant at their baseline values. For both the regression task and the classification task, the data sets are split using a train/test split of 70\% / 30\% and a random state of 42. MSE measures the average of the squared differences between predicted values and true values, given as:
-
+\textit{Evaluation.} Both datasets are split into 70\% training and 30\% test data with random state 42; the Digits split is additionally stratified by class. For $n$ test samples with targets $y_i$ and predictions $\hat y_i$, regression is evaluated with
 \begin{equation}
-    \mathrm{MSE} = \frac{1}{n}\sum_{i=1}^{n}(y_i-\hat{y}_i)^2
+\mathrm{MSE} = \frac{1}{n}\sum_{i=1}^{n}(y_i-\hat{y}_i)^2, \quad
+R^2 = 1 - \frac{\sum_{i}(y_i-\hat{y}_i)^2}{\sum_{i}(y_i-\bar{y})^2},
 \end{equation}
-For the diabetes dataset, $R^2$ is appropriate for accuracy measurement:
-
-\begin{equation}
-    R^2 = 1 -
-    \frac{\sum_{i=1}^{n}(y_i-\hat{y}_i)^2}
-    {\sum_{i=1}^{n}(y_i-\bar{y})^2}
-\end{equation}
-
+where $\bar y$ is the mean test target. $R^2$ compares squared prediction error with the error of predicting that mean and can be negative. Classification is evaluated with accuracy, the fraction of test samples classified correctly. For the regression models, each hyperparameter was varied one at a time around a fixed baseline, using test MSE to describe sensitivity; the final models retain the baseline settings. For the classifiers, grid search uses mean accuracy over five stratified cross-validation folds without shuffling, constructed from the training set. Separate training-duration sweeps are diagnostic; the final SVM and MLP retain the 400 iterations and 400 epochs used in their initial grids.
 
 \subsubsection{ElasticNet Regression}
-For weights $\mathbf w$, bias $b$ and $N$ training pairs $(\mathbf x_j, y_j)$, ElasticNet minimizes
+For weights $\mathbf w$, bias $b$ and $N$ training pairs $(\mathbf x_j, y_j)$, ElasticNet~\cite{zou2005} minimizes
 \begin{equation}
-\mathcal L(\mathbf w, b) = \frac{1}{2N}\sum_{j=1}^{N}\bigl(y_j - \mathbf w^\top\mathbf x_j - b\bigr)^2 + \lambda_1\lVert\mathbf w\rVert_1 + \frac{\lambda_2}{2}\lVert\mathbf w\rVert_2^2.
+\mathcal L(\mathbf w, b) = \frac{1}{2N}\sum_{j=1}^{N}\bigl(y_j - \mathbf w^\top\mathbf x_j - b\bigr)^2 + \lambda_1\lVert\mathbf w\rVert_1 + \frac{\lambda_2}{2}\lVert\mathbf w\rVert_2^2,
 \end{equation}
-For gradient descent, the weight and bias updates are as follows:
-\begin{equation}
-\small
-\mathbf{W}^{(t+1)} = \mathbf{W}^{(t)} - \eta \left[
-\frac{1}{N}\mathbf{X}^T(\hat{\mathbf{Y}}-\mathbf{Y})
-+ \lambda_1 \operatorname{sign}(\mathbf{W}^{(t)})
-+\lambda_2\mathbf{W}^{(t)}
-\right]
-\end{equation}
-
-\begin{equation}
-b^{(t+1)} = b^{(t)} - \eta \frac{1}{N}
-\sum_{i=1}^{N}(\hat{y}_i-y_i)
-\end{equation}
-where $\lambda_1$ controls the strength of the $L_1$ penalty (sparsity and feature selection) and $\lambda_2$ controls the strength of the $L_2$ penalty (shrinking and correlated weights together).
+where $\lambda_1$ controls the L1 penalty, which drives weights to zero and so selects features, and $\lambda_2$ the L2 penalty, which shrinks weights and spreads them across correlated features. We set $\lambda_1 = \alpha\rho$ and $\lambda_2 = \alpha(1-\rho)$, with overall strength $\alpha$ and L1 ratio $\rho$. With predictions $\hat{\mathbf y} = X\mathbf w + b$ and learning rate $\eta$, gradient descent updates
+\begin{gather}
+\mathbf w \leftarrow \mathbf w - \eta\Bigl[\tfrac{1}{N}X^\top(\hat{\mathbf y}-\mathbf y) + \lambda_1\,\mathrm{sign}(\mathbf w) + \lambda_2\mathbf w\Bigr], \nonumber\\
+b \leftarrow b - \frac{\eta}{N}\sum_{j=1}^{N}(\hat y_j - y_j),
+\end{gather}
+using the subgradient $\mathrm{sign}(w_k)$ of $|w_k|$, with $\mathrm{sign}(0) = 0$.
 
 \subsubsection{Lasso Regression with Soft Thresholding}
-The Lasso is the special case $\lambda_2 = 0$. Lasso minimizes
+The Lasso~\cite{tibshirani1996} is the special case $\lambda_2 = 0$:
 \begin{equation}
-\mathcal{L}(W, b) = \frac{1}{2m} \sum_{i=1}^{m} \left( \hat{y}^{(i)} - y^{(i)} \right)^2 + \lambda_1 \sum_{j=1}^{n} |w_j|
+\mathcal{L}(\mathbf w, b) = \frac{1}{2N}\sum_{j=1}^{N}\bigl(y_j - \mathbf w^\top\mathbf x_j - b\bigr)^2 + \lambda_1\lVert\mathbf w\rVert_1 .
 \end{equation}
-For gradient descent, the weight and bias updates are as follows:
-\begin{equation}
-\nabla_W \mathcal{L}_{\text{OLS}} = \frac{1}{m} X^T (\hat{Y} - Y)
-\end{equation}
-\begin{equation}
-\nabla_b \mathcal{L}_{\text{OLS}} = \frac{1}{m} \sum_{i=1}^{m} (\hat{y}^{(i)} - y^{(i)})
-\end{equation}
-From soft thresholding
-\begin{equation}
-W_{\text{temp}} = W - \eta \cdot \nabla_W \mathcal{L}_{\text{OLS}}
-\end{equation}
-\begin{equation}
-W^{(t+1)} = \mathcal{S}\left(W_{\text{temp}}, \eta \lambda_1\right)
-\end{equation}
-\begin{equation}
-\mathcal{S}(x, \gamma) = \text{sign}(x) \cdot \max(|x| - \gamma, 0)
-\end{equation}
-with $\gamma = \eta \cdot \lambda_1$ which is the threshold value.
-\begin{equation}
-b^{(t+1)} = b^{(t)} - \eta \nabla_b\mathcal{L}_{OLS}
-\end{equation}
+Instead of the subgradient of $|w_k|$, which makes weights oscillate around zero, each iteration takes a gradient step on the squared error and then applies the soft-thresholding operator, the proximal operator of the L1 penalty:
+\begin{gather}
+\mathbf w \leftarrow \mathcal S\Bigl(\mathbf w - \tfrac{\eta}{N}X^\top(\hat{\mathbf y}-\mathbf y),\ \eta\lambda_1\Bigr), \nonumber\\
+\mathcal{S}(x, \gamma) = \mathrm{sign}(x)\max(|x| - \gamma, 0),
+\end{gather}
+applied elementwise, with the same bias update as ElasticNet. Weights whose magnitude falls below the threshold $\gamma = \eta\lambda_1$ are set exactly to zero, which produces sparse solutions.
+
 \subsubsection{Linear Regression}
-Scikit-learn's Linear Regression uses ordinary least squares:
-\begin{equation}
-\mathcal{L}(W,b) = \frac{1}{2m}
-\sum_{i=1}^{m}
-\left(\hat{y}^{(i)} - y^{(i)}\right)^2
-\end{equation}
-
-\begin{equation}
-\nabla_W \mathcal{L} =
-\frac{1}{m}X^T(\hat{Y}-Y)
-\end{equation}
-
-\begin{equation}
-\nabla_b \mathcal{L} =
-\frac{1}{m}\sum_{i=1}^{m}
-\left(\hat{y}^{(i)}-y^{(i)}\right)
-\end{equation}
-
-
-\begin{equation}
-W^{(t+1)} = W^{(t)} - \eta \nabla_W \mathcal{L}
-\end{equation}
-
-\begin{equation}
-b^{(t+1)} = b^{(t)} - \eta \nabla_b \mathcal{L}
-\end{equation}
-
-
+Scikit-learn's LinearRegression fits ordinary least squares, minimizing $\lVert \mathbf y-X\mathbf w-b\rVert_2^2$ without a penalty. It solves the least-squares problem using a numerically stable solver rather than gradient descent. For centred data, when $X^\top X$ is invertible, the solution can be written as $\mathbf w=(X^\top X)^{-1}X^\top\mathbf y$; this expression describes the solution rather than the numerical procedure used by the implementation. LinearRegression serves as the unregularized reference for ElasticNet and the Lasso.
 
 \subsubsection{Multiclass SVM}
-For a binary problem with labels $t_j \in \{-1, +1\}$, a linear SVM predicts with $f(\mathbf x) = \mathbf w^\top\mathbf x + b$, where $\mathbf w$ are the weights and $b$ is the bias. It is trained by minimizing the L2-regularized hinge loss
+For a binary problem with labels $t_j \in \{-1, +1\}$, a linear SVM~\cite{cortes1995} predicts with $f(\mathbf x) = \mathbf w^\top\mathbf x + b$. It is trained by minimizing the L2-regularized hinge loss
 \begin{equation}
 \mathcal L = \frac{\lambda}{2}\lVert\mathbf w\rVert_2^2 + \frac{1}{N}\sum_{j=1}^{N}\max\bigl(0,\, 1 - t_j f(\mathbf x_j)\bigr),
 \label{eq:hinge}
@@ -293,180 +195,79 @@ For softmax with cross-entropy, the gradient with respect to the output pre-acti
 where $\odot$ is the elementwise product and $\mathrm{ReLU}'(z) = 1$ if $z > 0$ and $0$ otherwise. Weights are initialized from a normal distribution with standard deviation 0.001 (random seed 42) to break the symmetry between hidden units, and biases at zero. Each epoch performs one full-batch gradient-descent step $\theta \leftarrow \theta - \eta\nabla_\theta\mathcal L$ on every parameter $\theta$, with learning rate $\eta$. The hyperparameters are the hidden size $n_1$, $\eta$ and the number of epochs.
 
 \subsubsection{Random Forest}
-A random forest is an ensemble of decision trees that produces a decision based on majority voting. For each tree, a bootstrap sample is created by bagging, i.e., drawing training samples with replacement. The decision tree is grown by splitting nodes. At each split, only a random subset of the available features is considered. At each node, the tree chooses the split that minimizes the Gini impurity $G$, as defined by
-\[
-G = 1 - \sum_{k=1}^{K}p_k^2
-\]
-where $p_k$ is the proportion of class $k$ in the node. A candidate split is evaluated using its weighted child impurity, defined by
-\[
-G_{\text{split}} = \frac{n_L}{n}G_L + \frac{n_R}{n}G_R
-\]
-where $n_L$ and $n_R$ are the sample counts of the left and right children, respectively, and $G_L$ and $G_R$ are their Gini impurity. The tree recursively chooses the split that minimizes $G_{\text{split}}$, until a leaf node or the maximum depth is reached.
-
-For prediction, given a new input $x$, every tree produces a class prediction. The forest returns the majority vote, that is, the class that's predicted by the most trees.
+A random forest~\cite{breiman2001} is an ensemble of decision trees whose prediction is the majority vote of the trees. Each tree is grown on a bootstrap sample of the training set, drawn with replacement, and only a random subset of the features is considered at each split, which decorrelates the trees. At each node, the tree chooses the split that minimizes the weighted Gini impurity of the two children,
+\begin{equation}
+G_{\text{split}} = \frac{n_L}{n}G_L + \frac{n_R}{n}G_R, \qquad G = 1 - \sum_{k=1}^{K}p_k^2,
+\end{equation}
+where $p_k$ is the proportion of class $k$ in a node, $n_L$ and $n_R$ are the numbers of samples in the left and right children, and $n = n_L + n_R$. Splitting continues until a node is pure or the maximum depth is reached. The hyperparameters tuned are the number of trees and the maximum depth.
 
 \subsection{Results}
-% Grid (Results): ElasticNet/Lasso results interpreted correctly (2), SVM decision boundaries and performance (1),
-% MLP architecture and hyperparameter analysis (1), comparison between scratch and scikit-learn models (2),
-% results presented with clear figures/tables (2).
-% Always state the range of each hyperparameter tested and the best values.
 
-\subsubsection{Elastic Net.} 
-\begin{figure}
-    \centering
-    \safefig{task2_elasticnet_pvsa.png}
-    \caption{Elastic Net Predicted vs. Actual}
-    \label{fig:task2_elasticnet_pvsa.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{task2_elasticnet_featurecomp.png}
-    \caption{Elastic Net Feature Comparison}
-    \label{fig:task2_elasticnet_featurecomp.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{iter_both.png}
-    \caption{Iteration Comparison}
-    \label{fig:iter_both.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{l1_penalty_both.png}
-    \caption{L1 Penalty Comparison}
-    \label{fig:l1_penalty_both.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{l2_penalty.png}
-    \caption{Elastic Net L2 Penalty}
-    \label{fig:l2_penalty.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{lr_both.png}
-    \caption{Learning Rate Comparison}
-    \label{fig:lr_both.png}
-\end{figure}
-The custom Elastic Net model produced an MSE= 2773.64 and $R^2 = 0.4862$ while the Scikit Learn Linear Regression model produced MSE = 2821.75 and $R^2 = 0.4773$, demonstrating similar results. Fig.~\ref{fig:task2_elasticnet_pvsa.png} shows the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
-Fig.~\ref{fig:task2_elasticnet_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ and $L_2$ penalties were able to push certain coefficients toward zero and induce sparsity, reducing the influence of redundant or less useful features. Some coefficients remain relatively similar between the two models, indicating that those features are important in prediction. The $L_1$ and $L_2$ ratios are defined in the custom model as $\alpha \cdot L$ratio.
-Fig.~\ref{fig:lr_both.png}, Fig.~\ref{fig:l2_penalty.png}, Fig.~\ref{fig:l1_penalty_both.png}, and Fig.~\ref{fig:iter_both.png} show how the choice of parameters affects the model's performance. The optimized parameter values are shown in Table ~\ref{tab:elasticnet_hyperparameters}.
+\subsubsection{Regression}
+With learning rate $\eta=0.05$, 10,000 iterations, $\alpha=0.05$ and $\rho=0.5$ (so $\lambda_1=\lambda_2=0.025$), on standardized features and target, our ElasticNet reaches a test MSE of 2773.64 ($R^2=0.4862$), against 2821.75 ($R^2=0.4773$) for LinearRegression. The Lasso, with $\lambda_1=0.05$, reaches 2803.57 ($R^2=0.4807$). Both regularized models slightly improve on ordinary least squares on this split. Predicted-versus-actual and residual plots are provided in the notebook.
 
-\subsubsection{Lasso.}
-\begin{figure}
-    \centering
-    \safefig{task2_lasso_pvsa.png}
-    \caption{Lasso Predicted vs. Actual}
-    \label{fig:task2_lasso_pvsa.png}
-\end{figure}
-\begin{figure}
-    \centering
-    \safefig{task2_lasso_featurecomp.png}
-    \caption{Lasso Feature Comparison}
-    \label{fig:task2_lasso_featurecomp.png}
+The coefficients differ in an informative way (Fig.~\ref{fig:regression_coefficients}). LinearRegression gives large opposite weights to the strongly correlated cholesterol measures $s_1$ ($-0.55$) and $s_2$ ($+0.31$), illustrating how correlated predictors can receive offsetting coefficients. ElasticNet shrinks these coefficients to approximately $-0.034$ and $-0.001$, respectively (Fig.~\ref{fig:regression_coefficients}(a)). The Lasso sets the coefficients of age, $s_1$, $s_2$, $s_4$ and $s_6$ exactly to zero (Fig.~\ref{fig:regression_coefficients}(b)). Its largest remaining coefficients in magnitude are those of body mass index, $s_5$, blood pressure and $s_3$, with a smaller negative coefficient for sex. Unlike the proximal Lasso, the subgradient ElasticNet implementation can retain small nonzero coefficients near zero.
+
+\begin{figure}[!htb]
+\centering
+\safefig{task2_elasticnet_featurecomp.png}\\[2pt]
+\safefig{task2_lasso_featurecomp.png}
+\caption{Standardized coefficients of (a) ElasticNet (top) and (b) the Lasso (bottom), both implemented from scratch, compared with LinearRegression on Diabetes.}
+\label{fig:regression_coefficients}
 \end{figure}
 
-The custom Lasso model produced an MSE = 2803.57 and $R^2 = 0.4807$ while the Scikit Learn Linear Regression model produced MSE = 2821.75 and $R^2 = 0.4773$. Fig.~\ref{fig:task2_lasso_pvsa.png} examines the predictions of the custom model and Scikit-learn's Linear Regression model against the true diabetes progression values. Like the elastic net analysis, both models produce predictions that generally follow the positive relationship between actual and predicted disease progression.
-Fig.~\ref{fig:task2_lasso_featurecomp.png} illustrates the differences between the coefficients learned by both models. The $L_1$ penalty was able to push more coefficients toward zero than in elastic net, reducing the influence of redundant or less useful features. Again, some coefficients remain relatively similar between the two models, indicating that those features are important in prediction.
-Fig.~\ref{fig:lr_both.png}, Fig.~\ref{fig:l2_penalty.png}, Fig.~\ref{fig:l1_penalty_both.png}, and Fig.~\ref{fig:iter_both.png} show how the choice of parameters affects the model's performance.
-\begin{table}[htbp]
-    \centering
-    \caption{Lasso and Elastic Net Hyperparameter Optimization Results}
-    \label{tab:elasticnet_hyperparameters}
-    \begin{tabular}{|l|c|c|c|}
-        \hline
-        \textbf{Parameter} & \textbf{Tested Range} & \textbf{Elastic Net Best} & \textbf{Lasso Best}\\
-        \hline
-        Learning Rate & 0.001--0.2 & 0.025 & 0.2\\
-        \hline
-        Iterations & 100--10,000 & 500 & 2500 \\
-        \hline
-        L1 Penalty & 0--1 & 0.025 & 0.025 \\
-        \hline
-        L2 Penalty & 0--1 & 0.05 & - \\
-        \hline
-    \end{tabular}
+Table~\ref{tab:reg_sensitivity} summarizes the sensitivity analysis; the corresponding sweep plots are provided in the notebook. Each hyperparameter is varied alone around the baseline. For ElasticNet, MSE varies by less than 6 across learning rates from 0.01 to 0.2; the smallest tested rate, 0.001, gives 2778.03. After 500 iterations, additional training changes MSE by less than 1. Penalty strength has a larger effect: the best tested $\alpha$ is 0.05, while $\alpha=1$ increases MSE to approximately 4990 as the coefficients shrink and the model underfits. The best tested L1 ratio is $\rho=0.5$, improving MSE by approximately 41 relative to pure L2 regularization and 28 relative to pure L1 regularization. For the Lasso, learning rates from 0.01 to 0.2 give essentially identical converged MSE, and 500 iterations are sufficient to reach this plateau. Its lowest tested MSE is 2774.43 at $\alpha=0.025$, whereas the final baseline retains $\alpha=0.05$. Because these sweeps inspect the test split, their minima are descriptive and do not constitute independent validation of alternative settings.
+
+\begin{table}[t]
+\centering
+\caption{Regression sensitivity analysis. EN and Lasso columns show the lowest-MSE tested setting or an approximate performance plateau. Final models retain the baseline settings. The L1 ratio applies only to ElasticNet.}
+\label{tab:reg_sensitivity}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccc}
+\toprule
+Hyperparameter & Range & EN & Lasso & Final \\
+\midrule
+Learning rate $\eta$ & 0.001--0.2 & 0.025 & 0.01--0.2 & 0.05 \\
+Iterations & 100--10,000 & $\geq500$ & $\geq500$ & 10,000 \\
+$\alpha$ & 0.001--1.0 & 0.05 & 0.025 & 0.05 \\
+L1 ratio $\rho$ & 0--1 & 0.5 & -- & 0.5 \\
+\bottomrule
+\end{tabular}
 \end{table}
 
 \subsubsection{Multiclass SVM}
-For tunning the SVM model, a grid search is performed for regularization parameter $\lambda$ and learning rate $\eta$, with the number of iterations set to a fixed value. The ranges of $\lambda$ and $\eta$ are shown in the $x$-axis of Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} and Fig.~\ref{fig:digits_svm_accuracy_vs_lr}. At each point in the grid, the performance is evaluated as the mean accuracy in a 5-fold cross-validation. This procedure is repeated for different numbers of iterations $n_{\text{iter}}$ until $n_{\text{iter}}$ is just large enough that the best performance plateaus. The gray vertical lines in Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} and Fig.~\ref{fig:digits_svm_accuracy_vs_lr} indicate the best hyperparameter values. The chosen values are
-\[
-\lambda = 10^{-4},\qquad\eta = 0.01,\qquad n_{\text{iter}} = 400
-\]
-With these hyperparameters, the accuracy on the test set is $94.83\%$.
+For the SVM, grid search evaluates seven logarithmically spaced values each for $\lambda\in[10^{-6},10^0]$ and $\eta\in[10^{-4},10^{-1}]$, with 400 iterations, using mean five-fold stratified cross-validation accuracy. The selected settings are $\lambda=10^{-5}$ and $\eta=0.01$, with a cross-validation accuracy of 96.02\% and a test accuracy of 95.56\%. We then vary $n_{\text{iter}}\in\{50,100,200,400,800,1600\}$ with the selected $\lambda$ and $\eta$ fixed to examine training duration; the final model retains 400 iterations. Cross-validation accuracy is highest at $\lambda=10^{-5}$ and falls substantially at $\lambda=1$ (Fig.~\ref{fig:svm_results}(a)), consistent with excessive regularization limiting the fit. The learning-rate sweep, provided in the notebook, also shows lower accuracy below and above the selected value. These fixed-budget comparisons show sensitivity to the optimization settings but do not alone establish overfitting or overshooting.
 
-Increasing $\lambda$ results in underfitting while decreasing it results in overfitting, both degrading accuracy on unseen data, as Fig.~\ref{fig:digits_svm_accuracy_vs_lambda} shows. If the learning rate is large, the gradient descent will overshoot, and if it is small then the point of convergence cannot be reached in a fixed number of iterations, both reducing the performance, as Fig.~\ref{fig:digits_svm_accuracy_vs_lr} shows.
+Since the data have 64 features, we plot decision boundaries after projecting the data onto their first two principal components and training an SVM on this two-dimensional representation, with its own grid search (Fig.~\ref{fig:svm_results}(b)). Each point is a sample coloured by its true class, and each coloured region indicates the model's predicted class. The cross-validation accuracy in two dimensions is only 56.43\%: two components discard substantial information needed to separate the classes, so several digits overlap in the projection, while well-separated digits such as 0 occupy their own region.
 
-Since the data has 64 features, in order to plot the decision boundary, the dimension must be reduced. We do it by using PCA to project the data points to 2-D. We then train a SVM model on the 2-D data set, using grid search to tune the hyperparameters. The result is plotted in Fig.~\ref{fig:digits_svm_decision_boundaries}. Each scattered point is a sample while the regions of different colors are decision regions. The cross-validation accuracy on this data set is only $56.43\%$, apparently due to the loss of important information about features in the projection.
-\begin{figure}[t]
+\begin{figure}[!htb]
 \centering
-\safefig[0.75]{digits_svm_accuracy_vs_lambda.png}
-\caption{SVM cross-validation accuracy vs. $\lambda$}
-\label{fig:digits_svm_accuracy_vs_lambda}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\safefig[0.75]{digits_svm_accuracy_vs_lr.png}
-\caption{SVM cross-validation accuracy vs. $\eta$}
-\label{fig:digits_svm_accuracy_vs_lr}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\safefig[0.85]{digits_svm_decision_boundaries.png}
-\caption{SVM decision boundaries on 2-D PCA projection}
-\label{fig:digits_svm_decision_boundaries}
+\safefig{digits_svm_accuracy_vs_lambda.png}\\[2pt]
+\safefig[0.8]{digits_svm_decision_boundaries.png}
+\caption{Multiclass SVM: (a) 5-fold cross-validation accuracy versus $\lambda$, with $\eta = 0.01$ and 400 iterations; (b) decision regions of an SVM trained on the first two principal components, with the training samples coloured by their true digit.}
+\label{fig:svm_results}
 \end{figure}
 
 \subsubsection{Multilayer Perceptron}
-For tuning the MLP model, a grid search is performed for hidden layer size $n_1$ and learning rate $\eta$, with epochs set to a fixed value. The ranges of $n_1$ and $\eta$ are shown in the $x$-axis of Fig.~\ref{fig:digits_mlp_accuracy_vs_hidden_size} and Fig.~\ref{fig:digits_mlp_accuracy_vs_lr}. At each point in the grid, the performance is evaluated as the mean accuracy in a 5-fold cross-validation. This procedure is repeated for different values of epochs until the number of epochs is just large enough that the best performance plateaus. The gray vertical lines in Fig.~\ref{fig:digits_mlp_accuracy_vs_hidden_size} and Fig.~\ref{fig:digits_mlp_accuracy_vs_lr} indicate the best hyperparameter values. The chosen values are
-\[
-n_1 = 96,\qquad
-\eta = 10^{-1.5},\qquad
-\text{epochs} = 400
-\]
-With these hyperparameters, the accuracy on the test set is $96.66\%$.
-
-A small hidden layer size results in underfitting while a large hidden layer size results in overfitting, both reducing the accuracy on unseen data, as shown in Fig.~\ref{fig:digits_mlp_accuracy_vs_hidden_size}. If the learning rate is large, the gradient descent will overshoot, and if it is small then the point of convergence cannot be reached in a fixed number of iterations, both reducing the performance, as Fig.~\ref{fig:digits_mlp_accuracy_vs_lr} shows. For a given learning rate, if the number of epochs is too small, the model will be far from the point of convergence and thus perform worse, as shown in Fig.~\ref{fig:digits_mlp_accuracy_vs_epochs}. As the number of epochs increases, the performance plateaus, while the training time increases, as shown in Fig.~\ref{fig:digits_mlp_fit_time_vs_epochs}.
-
-\begin{figure}[t]
-\centering
-\safefig[0.75]{digits_mlp_accuracy_vs_hidden_size.png}
-\caption{MLP cross-validation accuracy vs. hidden layer size}
-\label{fig:digits_mlp_accuracy_vs_hidden_size}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\safefig[0.75]{digits_mlp_accuracy_vs_lr.png}
-\caption{MLP cross-validation accuracy vs. $\eta$}
-\label{fig:digits_mlp_accuracy_vs_lr}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\safefig[0.75]{digits_mlp_accuracy_vs_epochs.png}
-\caption{MLP cross-validation accuracy vs. epochs}
-\label{fig:digits_mlp_accuracy_vs_epochs}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\safefig[0.75]{digits_mlp_fit_time_vs_epochs.png}
-\caption{MLP training time during cross-validation vs. epochs}
-\label{fig:digits_mlp_fit_time_vs_epochs}
-\end{figure}
+For the MLP, grid search evaluates hidden sizes $n_1\in\{32,64,96,128\}$ and seven logarithmically spaced learning rates from $10^{-1.5}$ to $10^{-1}$, with 400 epochs, using mean five-fold stratified cross-validation accuracy. The selected settings are $n_1=128$ and $\eta\approx0.068129$, giving a cross-validation accuracy of 96.98\% and a test accuracy of 96.85\%. The hidden-size and learning-rate sweeps are provided in the notebook: differences across the tested hidden sizes are modest, with the largest size achieving the highest accuracy, while learning-rate performance is non-monotonic. A separate sweep over $\{50,100,200,400,800\}$ epochs holds the selected width and learning rate fixed. Accuracy improves substantially from 50 to 100 epochs, then more gradually up to 400, with a slight decrease at 800 (Fig.~\ref{fig:mlp_forest_results}(a)). Training time increases approximately linearly with the epoch count, as shown in the notebook. The final model retains 400 epochs.
 
 \subsubsection{Random Forest}
-For tunning the Random Forest classifier, a grid search is performed for different numbers of estimators and different maximum depths. The range of the number of estimators searched is $\{50, 75, 100, 125, 150\}$, and the range of the maximum depth is $\{5, 10, 15, 20, 25\}$. The performance is evaluated as the mean accuracy in a 5-fold cross-validation. The best values are:
-\[
-\text{\#estimators} = 75,\qquad\text{maximum depth} = 10
-\]
-With the best hyperparameters found, the test accuracy is $95.63\%$.
+For the random forest, grid search evaluates the number of trees $\in\{50,75,100,125,150\}$ and maximum depth $\in\{5,10,15,20,25\}$ using the same five-fold stratified cross-validation procedure, with random state 42. The selected settings are 100 trees and maximum depth 10, giving a cross-validation accuracy of 97.45\% and a test accuracy of 96.85\%. Accuracy varies little across the tested tree counts, as shown in the notebook. Depth 5 performs worse than depth 10, while deeper trees provide no improvement in the plotted comparison (Fig.~\ref{fig:mlp_forest_results}(b)).
+
+\begin{figure}[!htb]
+\centering
+\safefig{digits_mlp_accuracy_vs_epochs.png}\\[2pt]
+\safefig{digits_rf_accuracy_vs_max_depth.png}
+\caption{5-fold cross-validation accuracy of (a) the MLP versus the number of epochs ($n_1 = 128$, $\eta \approx 0.068$) and (b) the random forest versus the maximum tree depth (100 trees). Gray lines mark the selected values.}
+\label{fig:mlp_forest_results}
+\end{figure}
+
+\subsubsection{Comparison}
+Table~\ref{tab:classifiers_comparison} compares the three classifiers. The MLP and random forest tie at 96.85\% test accuracy, each correctly classifying 523 of 540 test images; the linear SVM reaches 95.56\%, correctly classifying 516. The forest has the highest selected cross-validation accuracy. Both nonlinear models can capture relationships between pixels beyond those represented by the linear one-vs-rest SVM, although their identical test accuracy does not establish that they make the same errors. The SVM's strong performance shows that linear class scores are effective in the original 64-dimensional representation, whereas the two-dimensional PCA projection loses substantial classification information (Fig.~\ref{fig:svm_results}(b)).
 
 \begin{table}[t]
-\caption{Classifier Performance Comparison}
+\caption{Classifier performance on the Digits test set}
 \label{tab:classifiers_comparison}
 \centering
 \footnotesize
@@ -475,223 +276,188 @@ With the best hyperparameters found, the test accuracy is $95.63\%$.
 \toprule
 Model & Hyperparameters & Accuracy \\
 \midrule
-Multiclass SVM & $\lambda = 10^{-4}, \eta = 0.01, n_{\text{iter}} = 400$ & 94.83\% \\
-MLP & $n_1 = 96, \eta = 10^{-1.5}, \text{epochs} = 400$ & 96.66\% \\
-Random Forest & $\text{\#estimators} = 75, \text{max depth} = 10$ & 95.63\% \\
+Multiclass SVM & $\lambda=10^{-5}$, $\eta=0.01$, 400 iterations & 95.56\% \\
+MLP & $n_1=128$, $\eta\approx0.068$, 400 epochs & 96.85\% \\
+Random forest & 100 trees, maximum depth 10 & 96.85\% \\
 \bottomrule
 \end{tabular}
 \end{table}
+
 
 % ==================================================================
 \section{Task 3: Predicting Next-Day Stock Returns}
 \label{sec:task3}
 % ==================================================================
 
+\begin{figure*}[!t]
+\centering
+\safefig[0.75]{t3_volatility_adjustment.png}
+\caption{Cross-sectional standard deviation of member returns (63-day trailing average, 1980--2010) before (top) and after (bottom) volatility adjustment.}
+\label{fig:t3_voladj}
+\end{figure*}
+
 \subsection{Problem Formulation}
 \label{sec:t3_problem}
 
-The goal is to predict, at the close of each trading day $t$, the volatility-adjusted return $\tilde r_{t+1,i}$ (Section~\ref{sec:t3_analysis}) of every stock $i$ that is an S\&P~500 member on day $t$, using only information available at that close. The data are daily excess returns of S\&P~500 constituents from 1980 to 2013, daily index membership, sector codes and, from July 2009, social-media sentiment scores. About 500 stocks are predicted each day (at least 487, well above the required 100). We treat the task as regression rather than as classification of the return's sign, because the portfolio built from the predictions invests in proportion to the predicted value, so its magnitude matters. The predictions are judged mainly by the annualized Sharpe ratio of this portfolio, supported by the cumulative rank correlation between predicted and realized returns, the average holding period and the correlation with the market (Section~\ref{sec:t3_metrics}). Data from 1980 to 1989 are used only for training; models are selected on walk-forward predictions for 1990--2010 (the development period) and evaluated once on 2011--2013 (the test period). Because the signal is weak and the risk of overfitting is high, we compare a small number of simple models under a fixed protocol: the Lasso, a random forest and an MLP, as suggested in the assignment, against two rule-based baselines.
+At the close of each trading day $t$, we predict the volatility-adjusted return $\tilde r_{t+1,i}$ (Section~\ref{sec:t3_analysis}) of every stock $i$ that is an S\&P~500 member on day $t$, using only information available at that close. The data contain daily excess returns for 1,335 securities from 1980 to 2013, daily index membership and, from July 2009, bullish and bearish sentiment scores. We use the membership list of the prediction date, so the stocks predicted are those in the index at that time, about 500 per day. Every evaluated strategy exceeds the required 100 daily predictions; the minimum number of scored stocks is 487 during development and 491 during testing. We treat the task as regression rather than classification of the return's sign, because the portfolio built from the predictions invests in proportion to the predicted value, so its magnitude matters. Outcomes from 1990 to 2010 form the development period, used for model selection, and outcomes from 2011 to 2013 form the test period; earlier data provide initial training and feature history. Predictions are judged mainly by the annualized Sharpe ratio of the resulting portfolio, supported by cumulative rank correlation, holding period, correlation with the market and sensitivity to a one-day execution delay (Section~\ref{sec:t3_metrics}). We compare the three models suggested by the assignment, a Lasso, a random forest and an MLP, with two rules that require no fitting.
 
 \subsection{Data Analysis}
 \label{sec:t3_analysis}
 
-\textit{Data quality.} The equity data cover 1,335 securities over 8,577 trading days. Inspection revealed four issues not mentioned in the assignment. First, 21 identifiers (permnos) appear twice as column headers. The two series sharing an identifier are never identical: their correlation on overlapping days ranges from 0.06 to 0.47, comparable to two unrelated stocks, and in several cases both are index members on the same day, so we treat each column as a distinct security. Second, 21 columns contain no data and were removed, leaving 1,314 securities. Third, returns are not restricted to index members: on a typical day about 255 non-members also have returns. Because the dataset only contains stocks that were members at some point between 1980 and 2013, the presence of a non-member's history reveals its future inclusion in the index. Fourth, sector codes are static, so sector information in the early years relies on a classification assigned later. About 9.2\% of returns are exactly zero, consistent with pre-2001 fractional tick sizes and illiquid days. Sentiment is sparse: in 2010, only 270 of the 500 members have a sentiment series, and on a given day only about 12\% have a usable score.
+\textit{Data quality.} The returns and membership tables share 8,577 trading days. Twenty-one permanent identifiers (permnos) appear twice as column headers with two different return series, so we keep both as distinct securities. Twenty-one columns are entirely empty and were removed, leaving 1,314 securities. Index membership ranges from 489 to 500 stocks per day, and no member return is missing. Returns are also given for stocks on days when they are not members (2.1 million such stock-days before 2011). The supplied universe contains stocks that were members at some point between 1980 and 2013, so using all available securities as training examples could introduce bias from the retrospectively defined universe. Non-member days are therefore used only to estimate volatility and features, never as training targets, in cross-sectional rankings or in evaluation. Sentiment is sparse: in 2010, only 11.6\% of members have a usable pair of scores on a given day. All exploratory statistics use data before 2011 only.
 
-\textit{Volatility adjustment.} Raw returns are strongly non-stationary: the cross-sectional standard deviation of member returns varies by a factor of about four over the sample (Fig.~\ref{fig:t3_voladj}, top). Following the assignment, we estimate each stock's mean and variance with exponentially weighted moving averages (EWMA),
+\textit{Distributions and volatility.} Raw member returns are heavy-tailed, with an excess kurtosis of 39.3 (0 for a Gaussian), and their scale changes strongly over time: their cross-sectional standard deviation more than doubles during crises (Fig.~\ref{fig:t3_voladj}, top). Following the assignment, we estimate each stock's mean and variance with exponentially weighted moving averages (EWMA),
 \begin{align}
 \hat\mu_t &= (1-\beta_2)\,r_t + \beta_2\,\hat\mu_{t-1},\\
-\hat\sigma^2_t &= (1-\beta_1)(r_t - \hat\mu_t)^2 + \beta_1\,\hat\sigma^2_{t-1},
+\hat\sigma^2_t &= (1-\beta_1)(r_t-\hat\mu_t)^2
+                 + \beta_1\,\hat\sigma^2_{t-1},
 \end{align}
-with $\beta_1 = 0.97$ (a variance half-life of about 23 days), $\beta_2 = 0.99$ (a mean half-life of about 69 days), an initial variance of $0.02^2$ and a burn-in of 100 observations per stock, and form $\tilde r_t = r_t/\hat\sigma_{t-1}$. The previous day's estimate is used because $\hat\sigma_t$ depends on $r_t$ itself and would not be known when positions are set. The adjusted series is much more stable, with a cross-sectional standard deviation between 0.6 and 1.1 (Fig.~\ref{fig:t3_voladj}, bottom); the remaining dips coincide with crises (1987, 2002, 2008, 2011), when rising correlations inflate total volatility relative to cross-sectional dispersion. The adjusted returns are heavy-tailed: on member days, their standard deviation is 1.06, their excess kurtosis is 22.7, and 0.20\% of them exceed 5 in absolute value.
+and form $\tilde r_t=r_t/\hat\sigma_{t-1}$, dividing by the previous day's estimate because $\hat\sigma_t$ depends on $r_t$ itself. An observation $k$ days old has weight proportional to $\beta^k$, so the half-life is $\ln 2/(-\ln\beta)$. We use $\beta_1=0.97$, a variance half-life of about 23 trading days, so that volatility estimates follow regime changes without responding entirely to daily noise; $\beta_2=0.99$, a half-life of about 69 days, because the daily mean is small and noisy; an initial variance of $0.02^2$; and a burn-in of 100 observed returns per security, after which the direct weight on the initial variance is below 5\%. The state is carried forward unchanged on missing-return days. These settings were fixed before the compact run rather than tuned. The adjusted returns have a more stable scale, with a cross-sectional standard deviation between about 0.6 and 1.1 (Fig.~\ref{fig:t3_voladj}, bottom), although substantial dips remain around and after crises. Heavy tails remain: excess kurtosis falls to 22.5, and about 0.2\% of observed adjusted returns exceed 5 in absolute value, against approximately six in ten million for a Gaussian. This motivates clipping the fitted targets and ranking the features.
 
-\begin{figure}[t]
-\centering
-%\safefig{fig_t3_voladj.pdf}
-\includegraphics[width=\columnwidth]{../results/task3_compact/figures/figure-2.png}
-\caption{Cross-sectional standard deviation of member returns (63-day average) before (top) and after (bottom) volatility adjustment.}
-\label{fig:t3_voladj}
-\end{figure}
-
-\textit{Exploratory signal analysis.} Before fitting any model, we evaluated two classical effects as rule-based predictors. Short-term reversal, which predicts minus the mean adjusted return of the last five days, reaches a Sharpe ratio of 2.33 over 1985--2010 with a mean daily rank correlation of 0.026, but its Sharpe ratio falls from 4.09 in 1990--1994 to 1.25 in 2005--2010. Twelve-month momentum is much weaker, with a development Sharpe ratio of 0.52. These findings shape the method: past returns carry real but small predictive information, concentrated at short horizons; this information decays over time, so relationships must be re-estimated on recent data; and the heavy tails call for transformations that are robust to extreme values.
+\textit{Exploratory signals and features.} Two classical effects, evaluated as rules without fitting, suggest predictive information in past returns. Short-term reversal, which predicts minus the mean clipped adjusted return of the last five days, reaches a development Sharpe ratio of 2.18, but this falls from 4.08 in 1990--1994 to 1.25 in 2005--2010 (Table~\ref{tab:t3_dev}). Twelve-month momentum is much weaker (0.52). Among 2010 members, the ranked 1-, 5- and 21-day return features are moderately correlated with one another (0.19 to 0.44), because they share recent days, while momentum and volatility have little correlation with these short-horizon features. These findings motivate a small set of return predictors and regular re-estimation on recent data.
 
 \subsection{Data Processing and Leakage Prevention}
 \label{sec:t3_processing}
 
-\textit{Target and features.} The training target is the next-day adjusted return, clipped to $[-5, 5]$ and demeaned across members each day. We built 18 return-based features from the clipped adjusted returns: 1-, 5- and 21-day reversal (the mean adjusted return over the last 1, 5 and 21 days), 12-1 month momentum (the sum over days $t-251$ to $t-21$, skipping the most recent month), the logarithm of $\hat\sigma_t$, sector-relative versions of the reversal and momentum features (net of the same-day mean of the stock's sector), and exponentially smoothed versions of these features with half-lives of 5 and 10 days. Six smoothed features whose correlation with their unsmoothed version exceeded 0.97 were dropped. Each feature is ranked across members each day and scaled to $[-0.5, 0.5]$, with missing values set to the neutral value 0, then standardized at each refit using the training rows only. Sentiment features (bullish, bearish, net and total scores, raw and smoothed, and an availability flag) are used from July 2009 onward.
+\textit{Target and features.} Section~\ref{sec:t3_rationale} explains the choices below. To construct the training target of row $t$, we clip the next trading day's adjusted return to $[-5,5]$ and then demean it across the members of day $t$ with finite targets; evaluation uses the unclipped return. We use four predictors computed from clipped adjusted returns and one based on the EWMA volatility estimate, all available at the close of day $t$: the return of day $t$ (1-day reversal); its mean over days $t-4$ to $t$ (5-day reversal, at least three observations) and over $t-20$ to $t$ (21-day reversal, at least 15); 12-1 month momentum, the sum over days $t-251$ to $t-21$, requiring all 231 observations; and $\log\hat\sigma_t$, the current risk level. Each predictor is ranked among the members of day $t$ and scaled to $[-0.5,0.5]$, and missing values are set to the neutral value 0 after ranking. Mean member coverage over 1990--2010 before filling is approximately 99.77\% for the 1-day return, 99.76\% for the 5-day return, 99.73\% for the 21-day return, 98.99\% for momentum and 99.77\% for log volatility. For the sentiment comparison, we add net sentiment (bullish minus bearish) and activity (bullish plus bearish), both ranked, and a flag marking stocks with usable scores; duplicated permnos are excluded because their scores cannot be assigned unambiguously to a security.
 
-\textit{Training and test sets.} We use a walk-forward procedure. At each refit date $d$, a model is trained on the member rows of the preceding three years, up to day $d-1$, and then predicts every day until the next refit, every 63 trading days for the Lasso and every 252 for the random forest and MLP. Non-member days are used only to estimate volatility and build features, never as training targets or for evaluation. The development period (1990--2010) is used for all model selection; the test period (2011--2013) was evaluated once, after the final configurations had been committed to our repository.
+\textit{Walk-forward refits.} Every 252 trading days, each model is refit on the latest 756 eligible feature days, using member rows with a finite target and at most 100,000 stock-days sampled without replacement. The sampling seed is $42+252j$ for refit $j=0,1,\ldots$ within each walk-forward run; forest and MLP random states are fixed at 42. Each fitted model predicts every day until the next refit. The first prediction is made on 29 December 1989 and scored on 2 January 1990. During the test period the same schedule continues, so later refits train on test-period outcomes that have already been realized, as a live strategy would; test performance never selects a configuration.
 
-\textit{Leakage prevention.} Each feature on day $t$ uses only data up to day $t$, which a test verifies by recomputing all features from data truncated at 20 random dates and comparing them with the full-data values. The training code asserts that a model predicting on day $t$ is trained only on rows up to $t-1$, whose targets $\tilde r_t$ are known at the close of day $t$. Sentiment dated on calendar day $d$ is used only from the close of the first trading day after $d$, since posts may follow the market close. Two controls test the whole pipeline: shifting the features one day into the future raises the development Sharpe ratio of the Lasso from 4.06 to 68.3, while permuting the training targets within each day reduces it to $-0.02$, confirming that the pipeline detects leakage and that the models learn from real structure. Finally, the evaluation code was frozen before any model was trained.
+\textit{Leakage prevention.} A row enters a fit only if its label date, the next trading day, falls strictly before the refit date. The row of the trading day just before a refit is therefore excluded even though its features are already old, because its label is the return of the refit day itself. This label-date rule is the key leakage guard: checking feature dates alone would allow a label realized on the refit date into training. The walk-forward function asserts the rule at each refit, and a final check confirms it for all 319 refits. Every feature on day $t$ uses data up to day $t$ only; sentiment dated on calendar day $d$ is used only from the first trading day strictly after $d$, since posts may follow the market close (Friday to Sunday scores are averaged into Monday's row); the volatility adjustment uses $\hat\sigma_{t-1}$; and predictions are centred using only the members of the prediction date. Explicit checks confirm the period boundary: the last development prediction, on 30 December 2010, is scored on 31 December 2010, and the first test outcome, on 3 January 2011, uses the prediction made on 31 December 2010.
 
 \subsection{Proposed Solution}
 \label{sec:t3_solution}
 
-\textit{Models.} We compare three scikit-learn regressors~\cite{sklearn}. The Lasso~\cite{tibshirani1996} minimizes the squared error plus $\alpha\lVert\mathbf w\rVert_1$, which sets the weights of uninformative features to zero. The random forest~\cite{breiman2001} averages 100 regression trees, each grown on a random subsample of 200{,}000 training rows and considering one third of the features at each split. The MLP has one hidden layer of ReLU units and is trained on the squared error with an L2 weight penalty. The baselines are the 5-day reversal and 12-1 momentum rules of Section~\ref{sec:t3_analysis}, applied without fitting.
+\textit{Models.} We use three scikit-learn regressors~\cite{sklearn}. The Lasso~\cite{tibshirani1996} minimizes
+$\frac{1}{2n}\sum(y-\hat y)^2+\alpha\lVert\mathbf w\rVert_1$,
+which can set the weights of uninformative predictors to zero. The random forest~\cite{breiman2001} averages 100 regression trees, each grown on a bootstrap sample with splits chosen to reduce squared error; all five predictors are considered at each split. The MLP has one hidden layer of ReLU units and a linear output, and is trained on squared error with scikit-learn's L2 regularization parameter $\alpha=10^{-3}$, using the Adam optimizer with learning rate $10^{-3}$, mini-batches of 1,024 rows and a fixed number of epochs. The baselines are the 5-day reversal rule and 12-1 momentum, applied without fitting.
 
-\textit{Hyperparameter tuning.} For the Lasso, we searched six penalties $\alpha$ from $1.7\times10^{-4}$ to $1.7\times10^{-2}$ with three-year, five-year and expanding training windows. For the random forest, we searched maximum depths $\{4, 6, 8\}$ and minimum leaf sizes $\{200, 1000\}$, and for the MLP, 16 or 32 hidden units and L2 penalties $\{10^{-4}, 10^{-2}\}$, with the number of epochs chosen on the most recent 20\% of each training window. Configurations were ranked by development Sharpe ratio, preferring consistency across the four windows 1990--1994, 1995--1999, 2000--2004 and 2005--2010 over a higher total driven by one window. The best configuration of every family lay at the edge of its grid, so we extended each grid by one step, fixing in advance that a configuration would only be replaced if the extension improved its development Sharpe ratio by more than one standard error (0.22). The final configurations are a Lasso with $\alpha = 1.7\times10^{-4}$ refit every 63 days, a random forest of depth 12 with leaves of at least 200 rows, and an MLP with 32 hidden units, penalty $10^{-4}$ and up to 60 epochs, the latter two refit every 252 days, all on three-year windows.
+\textit{Hyperparameter tuning.} The grids were fixed before the compact run and contain 11 configurations: Lasso penalties $\alpha\in\{10^{-2},10^{-3},10^{-4}\}$; random forests with maximum depth $\in\{4,8\}$ and minimum leaf size $\in\{1000,200\}$; and MLPs with $\{16,32\}$ hidden units trained for $\{20,40\}$ epochs. Within each family, we select the configuration with the highest development Sharpe ratio pooled over 1990--2010, retaining the first configuration in the declared grid order in an exact tie. Sharpe ratios over 1990--1994, 1995--1999, 2000--2004 and 2005--2010 serve as diagnostics of stability. The selected configurations are a Lasso with $\alpha=10^{-4}$, a random forest of depth 8 with leaves of at least 200 rows, and an MLP with 32 hidden units trained for 40 epochs.
 
-\textit{Prediction smoothing.} To lengthen the holding period, each stock's predictions can be replaced by an exponentially weighted average of its past predictions, with weights that halve every $h$ days. As a fourth finalist, we smooth the MLP's predictions with $h = 5$, a choice fixed before its development performance was computed.
-
-\textit{Implementation.} The group inspected and cleaned the data, implemented the volatility adjustment and the evaluation code, and validated them. An LLM agent, Claude Code~\cite{claudecode}, then implemented the features and ran the experiments under a written protocol, reproduced in the appendix of the submitted notebook; Section~\ref{sec:t3_rationale} explains how this protocol limits overfitting, and Section~\ref{sec:llm} describes our LLM usage.
+\textit{Smoothing and sentiment.} To lengthen the holding period, a fourth strategy applies an exponentially weighted average to the selected MLP's predictions, with a half-life of five trading days fixed before the compact run. On consecutive days with predictions, the update is
+$s_{t,i}=(1-a)s_{t-1,i}+a\hat r_{t,i}$,
+where $a=1-2^{-1/5}$. Sentiment begins in July 2009, leaving 2010 as the available pre-test evaluation year. We fit the selected Lasso with and without the sentiment predictors on identical training dates from July 2009 and compare them on 2010 outcomes. This comparison is exploratory and does not select a test strategy.
 
 \subsection{Design Rationale}
 \label{sec:t3_rationale}
 
-\textit{Low signal and high noise.} The mean daily rank correlation of the reversal rule is only 0.026, so most of the variation in returns is noise. Volatility adjustment gives every stock and period a comparable scale. Ranking the features and clipping the targets limit the influence of the heavy tails, which would otherwise dominate a squared-error fit. Demeaning the target removes the market's common move, which no stock-level feature can predict, and focuses the models on returns relative to one another. Model capacity is kept small: the random forest uses large leaves and subsampled rows, the MLP has at most 32 hidden units and an L2 penalty, and the Lasso's L1 penalty removes features that do not help. A small, fixed set of features built from well-documented effects also limits the number of spurious relationships the models can find.
+\textit{Development and test periods.} The assignment specifies 2011--2013 as the test period. We begin development evaluation in 1990 to allow a long initial history for volatility estimation, feature construction and the first three-year training window. The 21-year development period spans different regimes, including the 2000--2002 crash and 2008. Selection maximizes pooled development Sharpe; sub-period results are inspected separately for stability. The assignment's rough Gaussian approximation gives a development Sharpe standard error of about 0.22.
 
-\textit{Non-stationarity.} Section~\ref{sec:t3_analysis} showed that predictability decays over time. We therefore re-estimate each model regularly on a trailing three-year window, which outperformed an expanding window for the Lasso (development Sharpe ratio 4.06 against 3.09), and select configurations that perform consistently across sub-periods rather than in a single favourable one.
+\textit{Clipping and the clipped target.} Approximately 0.2\% of observed pre-2011 member adjusted returns exceed $\pm5$. Clipping leaves about 99.8\% unchanged while reducing the influence of extreme observations on squared-error training: an error of 30 contributes as much squared loss as 900 errors of 1. We clip next-day adjusted returns before demeaning them across prediction-day members, focusing the target on relative returns. Evaluation uses the original, unclipped adjusted returns.
 
-\textit{Overfitting through repeated testing.} Comparing many configurations on the same data inflates the best result even without leakage. We restricted the search to small grids declared before the experiments, recorded every configuration tried (62 before the final selection, of which 55 were eligible and 7 were controls or diagnostics), fixed the one-standard-error replacement rule before extending the grids, and evaluated each finalist on the test period exactly once. Before that evaluation, we recorded an expected range for each test Sharpe ratio, so the test result could be judged against a prior expectation. Delegating the experiments to an agent made these rules essential: the agent could not modify the evaluation code (checked against the frozen version at every review), could not commit to the repository, stopped for human review after each of its five phases, and logged every decision. It also disclosed three minor deviations from the test lockout, none affecting a fitted model: it printed counts, but not values, of test-period returns while mapping sentiment onto duplicated identifiers, after which we required that mapping to use data up to 2010 only; the last development prediction, on December 31, 2010, is scored on the first test-period return; and we had evaluated the reversal rule through 2013 while validating the evaluation code.
+\textit{Five features.} The 1-, 5- and 21-day returns represent short-term reversal at three horizons. Momentum represents the longer-term tendency of past winners to keep winning; it skips the most recent month so that it does not overlap with the reversal windows. The volatility level lets the nonlinear models adapt these relationships to a stock's risk. The predictors are only moderately correlated, whereas the earlier study described below found that adding sector-relative and smoothed variants mostly created near-duplicates. Five predictors keep the models explainable and limit the opportunities to fit spurious relationships, while ranks provide a common scale without fitting a scaler.
 
-\textit{Holding period and sentiment.} Short holding periods mean high trading costs, so we tested smoothing half-lives of 2, 5 and 10 days to measure the trade-off with the Sharpe ratio. Because sentiment is available for only 18 months before the test period, sentiment models were developed on 2010 alone, with at most six configurations, to avoid fitting noise.
+\textit{Hyperparameter grids.} Each configuration requires a full 21-year walk-forward evaluation, so we use small grids to limit computation and selection overfitting. The Lasso penalties are logarithmically spaced. The forest combines limited depth with large leaves to average noisy targets. The MLP uses one hidden layer, an L2 penalty and a fixed training budget of 20 or 40 epochs. Its penalty and learning rate are both fixed at $10^{-3}$ to limit the search. Training duration is tuned on development performance; no validation-based early stopping is used.
+
+\textit{Refitting, window length and sample size.} Changing relationships motivate regular refitting on recent history. We refit every 252 trading days using the latest 756 eligible feature days, roughly three years and 375,000 member stock-days before filtering. Each fit samples at most 100,000 rows without replacement to bound computation, using deterministic seeds. The cadence and sample cap are fixed design choices; this compact study does not measure the performance cost of less frequent refitting or subsampling.
+
+\textit{Overfitting through repeated testing.} We limited the core search to 11 configurations, declared before the compact run, with a single selection rule on the development period. This design followed an earlier, larger study run with an LLM agent, using 18 return predictors and additional sentiment variants. Its log contains 62 development experiments: 53 fitted-model runs, two baselines, two controls and five delayed-execution diagnostics. Its 2011--2013 results had been viewed before the compact design was fixed, so the test period here is not untouched. We therefore treat the compact results as indicative rather than as fresh, independent confirmation.
+
+\begin{figure*}[!t]
+\centering
+\safefig[0.62]{t3_test_performance.png}
+\caption{Test period (2011--2013): cumulative P\&L divided by each strategy's daily standard deviation (top) and cumulative daily Spearman rank IC (bottom).}
+\label{fig:t3_test}
+\end{figure*}
 
 \subsection{Evaluation Metrics}
 \label{sec:t3_metrics}
 
-\textit{Sharpe ratio.} Following the assignment, the portfolio invests in each stock in proportion to its predicted return divided by its estimated volatility, so its daily profit-and-loss (P\&L) is
+\textit{P\&L and Sharpe ratio.} Following the assignment, the portfolio invests in each stock in proportion to its predicted adjusted return divided by its estimated volatility. Its profit-and-loss (P\&L) on trading day $d$, immediately after prediction day $t$, is
 \begin{equation}
-R_t = \sum_i \hat r_{t,i}\,\tilde r_{t+1,i},
+R_d=\sum_i \hat r_{t,i}\,\tilde r_{d,i},
 \end{equation}
-where the sum is over members on day $t$ and $\hat r_{t,i}$ is the prediction, demeaned across stocks each day. We use unclipped returns, which are what a strategy would actually earn. The annualized Sharpe ratio is $\mathrm{SR} = \sqrt{252}\,\overline{R}/\mathrm{sd}(R)$, with no benchmark subtracted and 252 trading days per year. It measures return per unit of risk, which mean squared error does not capture. Under a Gaussian assumption, its standard error is roughly $1/\sqrt{\tau}$ for $\tau$ years of data: about 0.58 on the three-year test period and 0.22 on the 21-year development period. We report it over the full period, by window and by year, because a strategy that works only in the 1990s is not useful today, and we plot the cumulative P\&L to show whether performance is steady.
+where the sum is over members of day $t$ with an observed adjusted outcome, the predictions $\hat r_{t,i}$ are centred across prediction-day members, and $\tilde r_{d,i}$ is the unclipped adjusted return. The annualized Sharpe ratio is
+$\mathrm{SR}=\sqrt{252}\,\overline R/s_R$,
+where $s_R$ is the sample standard deviation. No benchmark is subtracted because returns are already in excess of the risk-free rate. Unlike mean squared error, Sharpe measures return per unit of risk. Under the assignment's rough Gaussian approximation, its standard error is about $1/\sqrt{\tau}$ for $\tau$ years of data: approximately 0.58 for the three-year test period and 0.22 for the 21-year development period. These approximations do not account for repeated model selection or dependence over time. We also report Sharpe by sub-period and year, and plot cumulative P\&L to examine stability.
 
-\textit{Rank correlation.} The information coefficient (IC) is the daily Spearman correlation between predicted and realized returns across stocks. Unlike the Pearson correlation, it measures whether the predicted ordering is correct and is robust to extreme returns. We report its mean, its $t$-statistic (the mean divided by its standard deviation, times the square root of the number of days) and its cumulative sum over time.
+\textit{Rank correlation.} The information coefficient (IC) is the daily Spearman correlation between predicted and realized returns across stocks. It measures whether the predicted ordering is correct and is less sensitive to extreme magnitudes than Pearson correlation. Its cumulative sum shows whether ranking information persists over the evaluation period.
 
-\textit{Holding period and market exposure.} The average holding period $H_{av}$ is computed with the assignment's formula, averaging over stocks with at least 20 predictions; it approximates how long a position is held and therefore how costly the strategy is to trade. Finally, we report the Pearson correlation $\rho_{\mathrm{mkt}}$ of $R_t$ with an equal-weight long-only portfolio of members, since returns have a positive mean and any predictor biased towards buying looks profitable. The assignment suggests that a Sharpe ratio of about 2 is needed for one-day holding periods and 0.8 to 1 for 3 to 5 days.
-
-\textit{Validation of the evaluation code.} Before any model was trained, perfect-foresight predictions gave a Sharpe ratio of 16.6 on the test period, confirming that predictions and returns are correctly aligned; random predictions gave 0.31, within the noise expected over three years; and an always-long portfolio gave a market correlation of 1.00.
+\textit{Holding period, market exposure and delay.} The average holding period $H_{av}$ applies the assignment's formula to each stock over pairs of consecutive days with valid predictions and observed adjusted outcomes, then averages across stocks. Missing days are not bridged. The market correlation $\rho_{\mathrm{mkt}}$ is the Pearson correlation of $R_d$ with the next-day raw return of an equal-weight portfolio of the prediction day's members. This diagnoses exposure to common market movements. The one-day-late Sharpe ratio applies each prediction one trading day later than intended. The assignment suggests gross Sharpe ratios of about 2 for one-day holding periods and 0.8 to 1 for three to five days as rough indicators of practical interest; these thresholds are not a transaction-cost model.
 
 \subsection{Results}
 \label{sec:t3_results}
 
-\textit{Development period.} Table~\ref{tab:t3_dev} reports the development results of the baselines and of each finalist. All fitted models beat the reversal rule, and the ordering of random forest and MLP above Lasso above reversal holds in every window. Performance decays steadily: every model loses about three quarters of its Sharpe ratio between 1990--1994 and 2005--2010, which makes the last window the best guide to test performance. Part of the early predictability likely reflects bid-ask bounce, since prices were quoted in fractions of a dollar before 2001. Differences within a family are small relative to the standard error of 0.22. In the grid extension, ordinary least squares improved on the Lasso by only 0.14, confirming a plateau, whereas deeper trees and longer MLP training cleared the replacement threshold narrowly (by 0.28 and 0.24).
-
-\begin{table}[t]
-\caption{Development-period results (walk-forward predictions, 1990--2010). SR: annualized Sharpe ratio, overall and by window; $H_{av}$: average holding period in days. Smoothed MLP: MLP predictions smoothed with a half-life of 5 days.}
+\begin{table}[!htb]
+\caption{Development results (outcomes 1990--2010). SR: annualized
+Sharpe ratio, overall and by sub-period; IC: mean daily rank
+correlation; $H_{av}$: average holding period in days.}
 \label{tab:t3_dev}
 \centering
 \footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{lcccccc}
+\setlength{\tabcolsep}{2.4pt}
+\begin{tabular}{lccccccc}
 \toprule
-Model & SR & 90--94 & 95--99 & 00--04 & 05--10 & $H_{av}$ \\
+Model & SR & 90--94 & 95--99 & 00--04 & 05--10 & IC & $H_{av}$ \\
 \midrule
-5-day reversal & 2.18 & 4.09  & 2.59 & 1.39    & 1.25 & 1.56 \\
-12-1 momentum  & 0.52 & 0.85  & 1.22 & $-0.01$ & 0.23 & 10.91 \\
-Lasso          & 4.06 & 7.48  & 4.77 & 2.60    & 1.81 & 1.39 \\
-Random forest  & 5.78 & 10.19 & 6.49 & 4.14    & 2.70 & 1.09 \\
-MLP            & 5.39 & 9.20  & 6.33 & 3.86    & 2.69 & 1.27 \\
-Smoothed MLP   & 2.53 & 4.02  & 3.46 & 1.71    & 1.43 & 5.56 \\
+5-day reversal & 2.18 & 4.08 & 2.61 & 1.41 & 1.25 & 0.023 & 1.56 \\
+12-1 momentum  & 0.52 & 0.87 & 1.16 & 0.03 & 0.22 & 0.012 & 10.96 \\
+Lasso          & 2.62 & 5.27 & 2.92 & 1.34 & 1.04 & 0.025 & 1.20 \\
+Random forest  & 4.75 & 8.83 & 5.43 & 2.98 & 2.08 & 0.028 & 0.97 \\
+MLP            & 3.96 & 8.22 & 4.69 & 2.13 & 1.57 & 0.027 & 1.04 \\
+Smoothed MLP   & 1.82 & 2.76 & 2.29 & 1.57 & 0.76 & 0.015 & 4.87 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textit{Smoothing and sentiment.} Smoothing trades Sharpe ratio for holding period (Table~\ref{tab:t3_smooth}). For the MLP, a half-life of 5 days lengthens the holding period from 1.3 to 5.7 days and reduces the development Sharpe ratio from 5.16 to 2.45, still well above the benchmark for that horizon. Sentiment did not help: in 2010, adding sentiment features to the Lasso gave Sharpe ratios of 0.32 to 0.37, against 0.37 to 0.43 without, a sentiment-only Lasso scored $-0.90$, and a random forest with sentiment (1.32) did worse than the random forest on return features alone (3.67). With a standard error of about 1.0 for one year, none of these differences is significant, and no sentiment model was retained.
-
-\begin{table}[t]
-\caption{Effect of smoothing the predictions with half-life $h$ days (initial-grid configurations): development Sharpe ratio / average holding period in days.}
-\label{tab:t3_smooth}
-\centering
-\small
-\begin{tabular}{lccc}
-\toprule
-$h$ & Lasso & Random forest & MLP \\
-\midrule
-0  & 4.06 / 1.39 & 5.50 / 1.14 & 5.16 / 1.29 \\
-2  & 2.86 / 3.55 & 3.79 / 2.95 & 3.55 / 3.30 \\
-5  & 2.08 / 6.27 & 2.53 / 5.23 & 2.45 / 5.73 \\
-10 & 1.61 / 9.92 & 1.76 / 8.29 & 1.75 / 8.87 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textit{Test period.} Table~\ref{tab:t3_test} and Fig.~\ref{fig:t3_test} report the single evaluation on 2011--2013. The expected range of each Sharpe ratio, recorded beforehand, runs from one more step of the decay observed between development windows to no further decay, widened by one standard error on each side. All four finalists beat both baselines. The random forest (3.65) and the MLP (3.01) were profitable in each test year, their cumulative rank correlation rises throughout the period, and their IC $t$-statistics exceed 5, so their rankings of stocks carry information. The two metrics do not always agree: 12-1 momentum has a mean rank correlation similar to theirs (0.019) but a Sharpe ratio of only 0.79, because its daily rank correlation is much more variable, as its lower IC $t$-statistic shows. Both held or exceeded their 2005--2010 level, whereas the Lasso (1.81 to 1.07) and the reversal rule (1.25 to 0.73) continued to decay. The Lasso's margin over the reversal rule is only about 0.6 standard errors, and the gap between the random forest and the MLP, about one standard error, does not establish that either is better. The random forest exceeded the upper end of its expected range. Before accepting this result, we verified that the walk-forward reproduced all development results exactly, that every training window ended before its refit date, and that recomputing features, targets and predictions after deleting all data beyond June 2012 left every earlier prediction unchanged. A plausible explanation, found only after seeing the result, is that the 2005--2010 reference is depressed by 2008: the forest's mean yearly Sharpe ratio over 2005--2010 is 3.02. The smoothed MLP reached 1.40 with a holding period of 4.5 days, but almost all of it came in 2012 and 2013 (2011: 0.11), and its IC $t$-statistic of 1.84 is weak.
-
-\begin{table}[t]
-\caption{Test-period results (2011--2013), each finalist evaluated once. Expected: Sharpe ratio range recorded before the evaluation; IC $t$: $t$-statistic of the mean daily rank correlation; $\rho_{\mathrm{mkt}}$: correlation with the equal-weight market.}
+\begin{table}[!htb]
+\caption{Test results (outcomes 2011--2013). SR: annualized Sharpe
+ratio; IC: mean daily rank correlation; $H_{av}$: average holding
+period in days; $\rho_{\mathrm{mkt}}$: correlation with the
+equal-weight market; Late: Sharpe ratio with one-day-late execution.}
 \label{tab:t3_test}
 \centering
-\small
+\footnotesize
 \setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{lccccc}
 \toprule
-Model & Expected & SR & IC $t$ & $H_{av}$ & $\rho_{\mathrm{mkt}}$ \\
+Model & SR & IC & $H_{av}$ & $\rho_{\mathrm{mkt}}$ & Late \\
 \midrule
-5-day reversal & 0.2--1.8     & 0.73 & 1.87 & 1.61  & 0.15 \\
-12-1 momentum  & $-0.4$--0.8  & 0.79 & 3.21 & 11.44 & 0.12 \\
-Lasso          & 0.6--2.4     & 1.07 & 2.67 & 1.48  & 0.38 \\
-Random forest  & 1.2--3.3     & 3.65 & 5.55 & 0.94  & 0.39 \\
-MLP            & 1.2--3.3     & 3.01 & 5.65 & 1.04  & 0.31 \\
-Smoothed MLP   & 0.35--2.0    & 1.40 & 1.84 & 4.51  & 0.40 \\
+5-day reversal & 0.73 & 0.008 & 1.60  & 0.18 & 0.71 \\
+12-1 momentum  & 0.78 & 0.019 & 11.49 & 0.03 & 0.81 \\
+Lasso          & 1.31 & 0.013 & 0.92  & 0.29 & 0.85 \\
+Random forest  & 3.19 & 0.017 & 0.87  & 0.30 & 1.58 \\
+MLP            & 2.34 & 0.017 & 0.87  & 0.24 & 0.77 \\
+Smoothed MLP   & 1.24 & 0.009 & 4.16  & 0.30 & 0.91 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
-\centering
-%\safefig{fig_t3_test.pdf}
-\includegraphics[width=\columnwidth]{../results/task3_compact/figures/figure-4.png}
-\caption{Test period (2011--2013): cumulative P\&L, each series divided by its own daily standard deviation so slopes are comparable (top), and cumulative daily rank correlation (bottom), for the finalists and baselines.}
-\label{fig:t3_test}
-\end{figure}
+\textit{Development period.} More flexible configurations performed better: the forest's development Sharpe ratio rose from 4.04 (depth 4, leaves of 1,000) to 4.75 (depth 8, leaves of 200), and the MLP's from 3.47 (16 units, 20 epochs) to 3.96 (32 units, 40 epochs). The Lasso scored 2.6196 and 2.6248 for $\alpha=10^{-3}$ and $10^{-4}$, while $\alpha=10^{-2}$ set every coefficient to zero, giving constant predictions and an undefined Sharpe ratio after centring. The selected forest and MLP lie at the edge of their grids, which we kept as declared. Table~\ref{tab:t3_dev} compares the selected models with the baselines. The forest ranks above the MLP in every sub-period, and both outperform the Lasso and reversal rule. However, the Lasso falls below reversal in 2000--2004 and 2005--2010. Performance declines substantially between the first and last sub-periods: the forest falls from 8.83 to 2.08, and the Lasso from 5.27 to 1.04. Smoothing the MLP lengthens its holding period from 1.04 to 4.87 days and lowers its Sharpe ratio from 3.96 to 1.82. In the sentiment comparison, adding sentiment changed the 2010 Lasso Sharpe ratio from 0.61 to 0.59. This small exploratory difference over one year provides no convincing evidence of a benefit from sentiment.
 
-\textit{Execution timing and market exposure.} All Sharpe ratios exclude transaction costs and assume that trades execute at the closing prices used to form the predictions. To measure this dependence, we re-scored each finalist with its predictions applied one day late (Table~\ref{tab:t3_robust}); the test-period diagnostics are post-hoc analyses of the frozen predictions. In development, the fitted models kept about two thirds of their Sharpe ratio, while the reversal rule kept all of it. On the test period, the random forest and MLP kept only about one third (1.24 and 1.02), which leaves the random forest only 0.55, about one standard error, above the reversal rule; the Lasso and the smoothed MLP kept about two thirds. Daily demeaning also does not make the strategies market neutral: each finalist's P\&L has a test correlation of 0.31 to 0.40 with the equal-weight market, whose own Sharpe ratio over the period was 1.10. Subtracting the fitted market exposure barely changes the random forest and MLP (3.50 and 2.81), whereas the Lasso falls from 1.07 to 0.70, so much of its test performance was market exposure.
+\textit{Test period.} Table~\ref{tab:t3_test} and Fig.~\ref{fig:t3_test} report the results on 2011--2013. All three fitted models beat both baselines. The random forest reaches a gross Sharpe ratio of 3.19 and has positive annual Sharpe ratios in every test year (3.44, 3.45 and 2.80). The MLP reaches 2.34 but is less stable (3.08, 1.78 and 2.31), and the Lasso reaches 1.31. All three exceed their 2005--2010 level, whereas the reversal rule continues to decline (0.73, with a loss in 2012). The cumulative rank correlation of the forest and the MLP rises overall, with intervening declines (Fig.~\ref{fig:t3_test}, bottom), consistent with predictive information in their stock orderings over this sample. The two metrics do not always agree: momentum has the highest mean IC (0.019) but a Sharpe ratio of only 0.78. IC evaluates daily ordering, whereas P\&L depends on prediction magnitudes and realized return magnitudes; a higher average IC therefore need not imply a higher Sharpe ratio.
 
-\begin{table}[t]
-\caption{Robustness: Sharpe ratio with on-time and one-day-late execution in development and test, and test Sharpe ratio after subtracting the fitted market exposure (hedged).}
-\label{tab:t3_robust}
-\centering
-\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{lccccc}
-\toprule
- & \multicolumn{2}{c}{Development} & \multicolumn{3}{c}{Test} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-6}
-Model & On time & Late & On time & Late & Hedged \\
-\midrule
-5-day reversal & 2.18 & 2.29 & 0.73 & 0.69 & 0.56 \\
-Lasso          & 4.06 & 2.70 & 1.07 & 0.72 & 0.70 \\
-Random forest  & 5.78 & 3.81 & 3.65 & 1.24 & 3.50 \\
-MLP            & 5.39 & 3.55 & 3.01 & 1.02 & 2.81 \\
-Smoothed MLP   & 2.53 & --   & 1.40 & 0.93 & 1.04 \\
-\bottomrule
-\end{tabular}
-\end{table}
+Three diagnostics temper these results. First, the fitted strategies change rapidly ($H_{av}\approx0.9$ days). The forest and MLP exceed the assignment's rough gross Sharpe benchmark of 2 for this horizon, while the Lasso does not; this does not establish profitability after costs. Second, the fitted strategies are sensitive to execution timing: one day late, the forest retains about half its Sharpe ratio (1.58), the MLP about a third (0.77) and the Lasso about two thirds (0.85), while the baseline Sharpe ratios change comparatively little. Third, centring predictions does not make the strategies market neutral: the fitted models' P\&L has correlations of 0.24 to 0.30 with the equal-weight market. The smoothed MLP holds positions for approximately 4.2 days and retains about three quarters of its Sharpe ratio when delayed (1.24 to 0.91). Its delayed score lies within the assignment's rough range of interest for that horizon, although its 2011 Sharpe ratio is only 0.31.
 
 \subsection{Conclusion}
 \label{sec:t3_conclusion}
 
-Past returns contain genuine short-horizon information about relative stock returns. The random forest and MLP captured it on the test period, about five to six standard errors from zero, and hedging their market exposure barely changed them; their mean daily rank correlation is only 0.018, but with about 500 predictions per day this small edge accumulates. The Lasso's coefficients shrank steadily over time (the sum of their absolute values averaged 0.24 in 1990--1994, 0.18 in 2005--2010 and 0.08 during the test period), and sentiment added nothing measurable. However, most of the nonlinear models' advantage requires trading at the close used to form the prediction; applied one day late, they come within about one standard error of the reversal rule. The smoothed MLP, which keeps two thirds of its Sharpe ratio when delayed (0.93 at a holding period of 4.5 days), is therefore the most credible result. Future work should train on an execution-lagged target (the return from $t+1$ to $t+2$), include transaction costs in model selection, build market- and sector-neutral portfolios, control the false discovery rate across features, and revisit sentiment with a longer history.
+The results suggest small but persistent predictive information in past returns for next-day relative returns. The random forest captures this information best in the observed comparison, ahead of the MLP and Lasso; the short sentiment comparison shows no measurable benefit. Performance is sensitive to execution timing, the fitted models have short holding periods, and the test period had been viewed in an earlier study. The smoothed MLP offers a longer-holding candidate for further cost-aware evaluation, although practical profitability remains untested. Future work should evaluate on a genuinely later period, train on an execution-lagged target (the return from $t+1$ to $t+2$), include transaction costs in model selection, extend the grids beyond their edges under a rule fixed in advance, and revisit sentiment with a longer history.
 
 
 % ==================================================================
 \section{Discussion and Conclusion}
 \label{sec:conclusion}
 % ==================================================================
-% Grid: summarizes findings (1) and suggests improvements (1).
-The first regression task included a statistical analysis, determining that scaling would be beneficial for model implementation. For the classification task, the classification models were evaluated by comparing their prediction accuracy with Scikit-learn implementation, demonstrating similar results (94.83\% and 96.66\% vs. 95.63\%). The hyperparameter studies demonstrate why selecting appropriate model parameters is important, as balancing regularization strength, model capacity, and learning rate prevents underfitting, overfitting, and gradient overshooting. Improvements could be made in the optimization algorithm, such as using mini batch gradient descent or Adam to improve computational efficiency and convergence, incorporating early-stopping, or using non-linear kernel SVM. Across the assignment, proper data preprocessing, regularization, and disciplined hyperparameter tuning consistently proved more critical to generalization than model complexity alone. In Task 3, the main lesson is that, with financial data, how a model is evaluated matters as much as which model is used: careful protocols against lookahead and repeated testing, and diagnostics such as delayed execution, changed how strong our results appeared.
+On Diabetes, regularized linear models implemented from scratch slightly improved on ordinary least squares on the selected split. ElasticNet shrank coefficients, while the proximal Lasso set several exactly to zero. On Digits, the MLP and random forest tied at 96.85\% test accuracy, ahead of the linear SVM at 95.56\%. The hyperparameter studies showed sensitivity to regularization, learning rate, model capacity and training duration, although the observed curves alone do not establish every underlying cause. In Task~3, delayed execution substantially reduced the fitted models' Sharpe ratios, demonstrating the importance of evaluation timing. Improvements include selecting regression hyperparameters by cross-validation rather than inspecting test MSE, investigating mini-batch or adaptive optimization and validation-based early stopping for the scratch models, and evaluating standardized Digits features. For Task~3, future work should use an execution-lagged target and explicit transaction costs, with evaluation on a later period that has not previously been inspected.
 
 
 % ==================================================================
 \section{Statement of Contributions}
 % ==================================================================
-This assignment was broken down as follows: Jocelyn Poon worked on the regression portion of task 1 and 2, Ruiyong Xu worked on the classification portion of task 1 and 2, finally Louis Salanon and Maxime Robatche-Claive focused on task 3. All members were assigned to write their own report section based on their task, and everyone reviewed the full submission.
+Jocelyn Poon worked on Task~1, Ruiyong Xu on Task~2 (regression and classification), and Louis Salanon and Maxime Robatche-Claive on Task~3. Each member wrote the report section for their task, and everyone reviewed the full submission.
 
 
 % ==================================================================
 \section{Statement on LLM Usage}
 \label{sec:llm}
 % ==================================================================
-Chat GPT was used in the regression task to help generate plots and verify the implementation of the models. Our implementation of the MLP class referenced the code output by ChatGPT, prompted by passing the given MLP Python class template and asking it to give a minimal implementation. For Task 3, we used Claude (Anthropic, model Claude Opus 5.5, chat interface) interactively to plan the division of work, to guide the inspection and cleaning of the data, and to suggest code for volatility adjustment and evaluation, which we ran, checked against controls and modified ourselves. The same assistant drafted the agent prompt and an initial version of the Task 3 text in this report, both of which we reviewed and edited. Experiments were then run with Claude Code (Opus 5.5 High from \texttt{/model} in Claude Code) inside our repository. Its context consisted of the repository, our exploration notebook and the written prompt, reproduced in the appendix of the submitted notebook together with a summary of the agent's log, which records its decisions and the questions it asked us. We reviewed the agent's output at each of its five checkpoints, made all commits ourselves, and approved the finalists before the test evaluation.
 
+For Tasks~1 and~2, we used ChatGPT/Codex (OpenAI) to review the implementations against the assignment instructions, and Claude Code (through the chat interface in VS Code, model Sonnet 5.5) to help clean up the code and improve the visualizations.
 
-% ==================================================================
-\begin{thebibliography}{9}
-\bibitem{sklearn} F. Pedregosa \emph{et al.}, ``Scikit-learn: Machine learning in Python,'' \emph{J. Mach. Learn. Res.}, vol. 12, pp. 2825--2830, 2011.
-\bibitem{tibshirani1996} R. Tibshirani, ``Regression shrinkage and selection via the lasso,'' \emph{J. Roy. Stat. Soc. B}, vol. 58, no. 1, pp. 267--288, 1996.
-%\bibitem{zou2005} H. Zou and T. Hastie, ``Regularization and variable selection via the elastic net,'' \emph{J. Roy. Stat. Soc. B}, vol. 67, no. 2, pp. 301--320, 2005.
-%\bibitem{cortes1995} C. Cortes and V. Vapnik, ``Support-vector networks,'' \emph{Mach. Learn.}, vol. 20, no. 3, pp. 273--297, 1995.
-%\bibitem{breiman2001} L. Breiman, ``Random forests,'' \emph{Mach. Learn.}, vol. 45, no. 1, pp. 5--32, 2001.
-\bibitem{claudecode} Anthropic, ``Claude Code,'' 2026. [Online]. Available: \url{https://docs.claude.com}
-\end{thebibliography}
+For Tasks~1, we used ChatGPT/Codex (model GPT 6.1 Sol) to audit the assignment, plan this study, integrate the notebook, generate parts of the Task 3 code, and run verification. Its context included the PDFs and supplied CSVs. We remain responsible for understanding, checking and presenting the submitted work. The approved implementation brief specified five return features, the three small grids above,
+strict label-date checks, 2011–2013 outcome dates, at least 100 predictions daily, all assignment
+metrics, a matched sentiment comparison and a one-day execution-delay diagnostic. We did not ask
+the agent to maximize the observed test score.
 
 \end{document}
